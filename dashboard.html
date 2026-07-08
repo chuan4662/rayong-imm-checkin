@@ -1,0 +1,1277 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แดชบอร์ดหัวหน้า | ตม.จว.ระยอง</title>
+<style>
+  :root{
+    --green:#16a34a; --yellow:#ca8a04; --orange:#ea580c; --red:#dc2626; --purple:#7c3aed; --brown:#78350f;
+    --blue:#2563eb; --bg:#f3f4f6; --card:#ffffff; --text:#111827; --muted:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,"Segoe UI",Roboto,"Sarabun",sans-serif;
+    background:var(--bg); color:var(--text);
+  }
+  #app{max-width:1100px; margin:0 auto; padding:20px 16px;}
+  .card{
+    background:var(--card); border-radius:16px; padding:24px 20px;
+    box-shadow:0 1px 3px rgba(0,0,0,.1); margin-bottom:20px;
+  }
+  h1{font-size:20px; margin:0 0 4px;}
+  h2{font-size:16px; margin:0 0 12px;}
+  .sub{color:var(--muted); font-size:14px; margin:0 0 20px;}
+  label{display:block; font-size:14px; font-weight:600; margin:16px 0 6px;}
+  input[type=email], input[type=password], input[type=text]{
+    width:100%; padding:12px 14px; font-size:16px; border:1px solid #d1d5db;
+    border-radius:10px; background:#fff; color:var(--text);
+  }
+  .day-checks{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .day-checks label{display:inline-flex; align-items:center; gap:4px; font-weight:400; margin:0; font-size:14px;}
+  textarea{
+    width:100%; padding:12px 14px; font-size:15px; border:1px solid #d1d5db;
+    border-radius:10px; background:#fff; color:var(--text); resize:vertical; min-height:80px; font-family:inherit;
+  }
+  .char-count{font-size:12px; color:var(--muted); text-align:right; margin-top:4px;}
+  .char-count.over{color:var(--red); font-weight:700;}
+  .success-box{background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:12px 14px; border-radius:10px; font-size:14px; margin-top:12px;}
+  button{
+    padding:10px 18px; font-size:14px; font-weight:700; border:none;
+    border-radius:10px; cursor:pointer;
+  }
+  .btn-primary{background:var(--blue); color:#fff; width:100%; padding:14px; font-size:16px; margin-top:16px;}
+  .btn-primary:disabled{background:#93c5fd; cursor:not-allowed;}
+  .btn-small{background:#e5e7eb; color:var(--text); font-size:13px; padding:6px 12px; border-radius:8px;}
+  .btn-danger-small{background:#fee2e2; color:#991b1b; font-size:13px; padding:6px 12px; border-radius:8px;}
+  .hidden{display:none !important;}
+  .error-box{background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px 14px; border-radius:10px; font-size:14px; margin-top:12px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th, td{text-align:left; padding:10px 8px; border-bottom:1px solid #eee; vertical-align:middle;}
+  th{color:var(--muted); font-weight:600; font-size:13px;}
+  .badge{display:inline-block; padding:4px 12px; border-radius:999px; color:#fff; font-weight:700; font-size:13px; white-space:nowrap;}
+  .badge.green{background:var(--green);} .badge.yellow{background:var(--yellow);} .badge.orange{background:var(--orange);} .badge.red{background:var(--red);}
+  .badge.gray{background:#6b7280;}
+  .badge.purple{background:var(--purple); margin-left:4px;}
+  .badge.brown{background:var(--brown);}
+  .muted{color:var(--muted);}
+  .note-cell{max-width:220px; white-space:normal;}
+  .remark-toggle-btn{background:none; border:none; color:var(--blue); font-size:12px; padding:0; margin-left:4px; cursor:pointer; text-decoration:underline; width:auto; display:inline;}
+  .not-ready-row{background:#fffbeb;}
+  .center{text-align:center; padding:24px; color:var(--muted);}
+  .pin-ok{color:var(--green); font-weight:600;}
+  .pin-missing{color:#b45309; font-weight:600;}
+  .thumb{width:28px; height:28px; border-radius:6px; object-fit:cover; cursor:pointer; background:#e5e7eb; vertical-align:middle;}
+  .thumb-wrap{width:28px; height:28px; display:inline-block;}
+  .filter-row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px;}
+  .filter-row > div{flex:0 0 auto;}
+  .filter-row label{margin:0 0 6px;}
+  .filter-row input[type=date]{padding:10px 12px; font-size:14px; border:1px solid #d1d5db; border-radius:10px;}
+  .filter-row select{padding:10px 12px; font-size:14px; border:1px solid #d1d5db; border-radius:10px; min-width:180px;}
+  .btn-row-action{background:#e0e7ff; color:#3730a3; font-size:12px; padding:5px 10px; border-radius:8px; white-space:nowrap;}
+  .override-info{display:block; font-size:11px; color:var(--muted); margin-top:2px; font-style:italic;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px;}
+  .modal-box{background:#fff; border-radius:16px; padding:24px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto;}
+  .modal-box select{width:100%; padding:12px 14px; font-size:15px; border:1px solid #d1d5db; border-radius:10px; margin-top:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- หน้า login หัวหน้า -->
+  <section id="screen-login" class="card">
+    <h1>แดชบอร์ดหัวหน้า</h1>
+    <p class="sub">ตม.จว.ระยอง — เข้าได้เฉพาะบัญชีหัวหน้าเท่านั้น</p>
+    <label for="loginEmail">อีเมล</label>
+    <input type="email" id="loginEmail" autocomplete="username">
+    <label for="loginPassword">รหัสผ่าน</label>
+    <input type="password" id="loginPassword" autocomplete="current-password">
+    <div id="loginError" class="error-box hidden"></div>
+    <button class="btn-primary" id="btnLogin">เข้าสู่ระบบ</button>
+  </section>
+
+  <!-- หน้าหลักหลัง login -->
+  <section id="screen-main" class="hidden">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h1>แดชบอร์ดหัวหน้า</h1>
+          <p class="sub" id="whoami" style="margin:0;">-</p>
+        </div>
+        <button class="btn-small" id="btnLogout">ออกจากระบบ</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📢 กล่องม็อตโต้ / ข้อความบริการ (หมุนเวียน 3 ข้อความ)</h2>
+      <p class="sub" style="margin:0 0 4px;">ระบบจะหมุนแสดงข้อความทั้ง 3 สลับกันไปทุกวันทำงาน (ข้ามเสาร์-อาทิตย์) ให้เจ้าหน้าที่เห็นหลังเช็กอินเสร็จโดยอัตโนมัติ ไม่ต้องตั้งเอง แก้ไขได้โดยหัวหน้าทั้ง 3 คน ช่องที่มีป้าย "🟢 กำลังใช้วันนี้" คือข้อความที่เจ้าหน้าที่กำลังเห็นอยู่ตอนนี้</p>
+
+      <div id="mottoSlot1Badge" class="hidden" style="margin:14px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
+      <label for="mottoInput1">ข้อความที่ 1</label>
+      <textarea id="mottoInput1" maxlength="300" placeholder="เช่น ยิ้มแย้มแจ่มใส ให้บริการด้วยใจ ทุกคนคือคนสำคัญ"></textarea>
+      <div class="char-count" id="mottoCharCount1">0 / 300</div>
+      <div id="mottoError1" class="error-box hidden"></div>
+      <div id="mottoSuccess1" class="success-box hidden">บันทึกข้อความที่ 1 เรียบร้อยแล้ว</div>
+      <button class="btn-primary" id="btnSaveMotto1" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 1</button>
+
+      <div id="mottoSlot2Badge" class="hidden" style="margin:24px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
+      <label for="mottoInput2" style="margin-top:24px;">ข้อความที่ 2</label>
+      <textarea id="mottoInput2" maxlength="300"></textarea>
+      <div class="char-count" id="mottoCharCount2">0 / 300</div>
+      <div id="mottoError2" class="error-box hidden"></div>
+      <div id="mottoSuccess2" class="success-box hidden">บันทึกข้อความที่ 2 เรียบร้อยแล้ว</div>
+      <button class="btn-primary" id="btnSaveMotto2" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 2</button>
+
+      <div id="mottoSlot3Badge" class="hidden" style="margin:24px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
+      <label for="mottoInput3" style="margin-top:24px;">ข้อความที่ 3</label>
+      <textarea id="mottoInput3" maxlength="300"></textarea>
+      <div class="char-count" id="mottoCharCount3">0 / 300</div>
+      <div id="mottoError3" class="error-box hidden"></div>
+      <div id="mottoSuccess3" class="success-box hidden">บันทึกข้อความที่ 3 เรียบร้อยแล้ว</div>
+      <button class="btn-primary" id="btnSaveMotto3" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 3</button>
+    </div>
+
+    <div class="card">
+      <div class="topbar">
+        <h2>เช็กอินวันนี้ (<span id="todayLabel">-</span>)</h2>
+        <button class="btn-small" id="btnExportToday">📊 Export Excel (วันนี้)</button>
+      </div>
+      <div id="todayTableWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>⚠️ วันนี้แจ้งไม่พร้อม</h2>
+      <p class="sub" style="margin:0 0 12px;">ดึงเฉพาะคนที่ติ๊ก "ไม่พร้อม" ตอนเช็กอิน พร้อมหมายเหตุที่เขาให้เหตุผลไว้ — ให้ดูง่ายโดยไม่ต้องไล่อ่านทุกแถวในตารางเช็กอินวันนี้</p>
+      <div id="notReadyWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🟤 ขาดเช็กอิน (วันนี้)</h2>
+      <p class="sub" style="margin:0 0 12px;">แสดงเฉพาะผู้ที่ควรทำงานวันนี้ตามวันทำงานที่ตั้งไว้ และไม่ตรงกับวันหยุดนักขัตฤกษ์ — จะฟันธงหลังเวลา 16:30 น. เท่านั้น เผื่อบางคนมีธุระช่วงเช้าแล้วมาทำงานช่วงบ่าย</p>
+      <div id="absenteesWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>ประวัติย้อนหลัง</h2>
+      <div class="filter-row">
+        <div>
+          <label for="histStart">จากวันที่</label>
+          <input type="date" id="histStart">
+        </div>
+        <div>
+          <label for="histEnd">ถึงวันที่</label>
+          <input type="date" id="histEnd">
+        </div>
+        <div>
+          <label for="histOfficerFilter">กรองรายคน</label>
+          <select id="histOfficerFilter"><option value="">ทุกคน</option></select>
+        </div>
+        <button class="btn-primary" id="btnHistSearch" style="width:auto; margin-top:0; padding:12px 20px;">ค้นหา</button>
+        <button class="btn-small" id="btnExportHist" style="padding:12px 20px;">📊 Export Excel</button>
+      </div>
+      <div id="histError" class="error-box hidden"></div>
+      <div id="remarkSummaryCard" class="hidden" style="margin-bottom:16px;">
+        <h3 style="font-size:15px; margin:0 0 8px;">📋 สรุปหมายเหตุเพิ่มเติมตามคีย์เวิร์ด (เฉพาะช่วงที่ค้นหา)</h3>
+        <div id="remarkSummaryWrap"></div>
+      </div>
+      <div id="histTableWrap"><div class="center">เลือกช่วงวันที่แล้วกด "ค้นหา"</div></div>
+    </div>
+
+    <div class="card">
+      <h2>รายชื่อเจ้าหน้าที่ทั้งหมด</h2>
+      <p class="sub" style="margin:0 0 12px;">กด "รีเซ็ต PIN" ถ้าเจ้าหน้าที่คนไหนลืมรหัส — เขาจะไปตั้ง PIN ใหม่เองได้ตอนล็อกอินครั้งถัดไป</p>
+      <div id="officersTableWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>📅 วันหยุดนักขัตฤกษ์</h2>
+      <p class="sub" style="margin:0 0 12px;">วันที่กำหนดไว้นี้จะไม่ถูกนับเป็น "ขาดเช็กอิน" สำหรับทุกคน หัวหน้าทั้ง 3 คนแก้ไขได้เท่ากัน</p>
+      <div class="filter-row">
+        <div>
+          <label for="holidayDate">วันที่</label>
+          <input type="date" id="holidayDate">
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <label for="holidayDesc">รายละเอียด (ไม่บังคับ)</label>
+          <input type="text" id="holidayDesc" placeholder="เช่น วันแม่แห่งชาติ">
+        </div>
+        <button class="btn-primary" id="btnAddHoliday" style="width:auto; margin-top:0; padding:12px 20px;">เพิ่มวันหยุด</button>
+      </div>
+      <div id="holidayError" class="error-box hidden"></div>
+      <div id="holidaysWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>📆 วันเริ่มนับสถิติรายเดือน</h2>
+      <p class="sub" style="margin:0 0 12px;">ปกติสถิติส่วนตัวของเจ้าหน้าที่จะนับตั้งแต่วันที่ 1 ของเดือน ถ้าเดือนไหนมีวันทดสอบระบบที่ไม่อยากให้นับ (เช่น เพิ่งเริ่มเปิดใช้งานกลางเดือน) ตั้งวันเริ่มนับใหม่ได้ที่นี่ — มีผลกับสถิติของทุกคนในเดือนนั้น หัวหน้าทั้ง 3 คนแก้ไขได้เท่ากัน</p>
+      <div class="filter-row">
+        <div>
+          <label for="statsPeriodMonth">เดือน</label>
+          <input type="month" id="statsPeriodMonth">
+        </div>
+        <div>
+          <label for="statsPeriodStartDate">เริ่มนับตั้งแต่วันที่</label>
+          <input type="date" id="statsPeriodStartDate">
+        </div>
+        <button class="btn-primary" id="btnSetStatsPeriod" style="width:auto; margin-top:0; padding:12px 20px;">ตั้งค่า</button>
+      </div>
+      <div id="statsPeriodError" class="error-box hidden"></div>
+      <div id="statsPeriodsWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ ตั้งค่าระบบ (เฉพาะชวนชัย)</h2>
+      <p class="sub" style="margin:0 0 12px;">พิกัด GPS ที่ทำงาน, เวลาเกณฑ์สี, และเวลาฟันธงขาดเช็กอิน — แก้ไขได้เฉพาะบัญชีอีเมลนี้เท่านั้น หัวหน้าอีก 2 คน (PIN) ไม่เห็นการ์ดนี้และไม่มีสิทธิ์แก้</p>
+      <label for="settingsOfficeLat">พิกัด GPS ที่ทำงาน</label>
+      <div class="filter-row" style="margin-bottom:0;">
+        <div><label style="font-weight:400; font-size:13px;">ละติจูด (lat)</label><input type="text" id="settingsOfficeLat" placeholder="เช่น 12.72399"></div>
+        <div><label style="font-weight:400; font-size:13px;">ลองจิจูด (lng)</label><input type="text" id="settingsOfficeLng" placeholder="เช่น 101.140954"></div>
+      </div>
+      <label style="margin-top:20px;">เวลาเกณฑ์สี (ก่อนเวลานี้ = สีนั้น หลังเวลาส้มถือเป็น 🔴 สาย อัตโนมัติ)</label>
+      <div class="filter-row" style="margin-bottom:0;">
+        <div><label style="font-weight:400; font-size:13px;">🟢 ดีเยี่ยม ก่อน</label><input type="time" id="settingsGreenBefore"></div>
+        <div><label style="font-weight:400; font-size:13px;">🟡 ทันพอดี ก่อน</label><input type="time" id="settingsYellowBefore"></div>
+        <div><label style="font-weight:400; font-size:13px;">🟠 มาเลท ก่อน</label><input type="time" id="settingsOrangeBefore"></div>
+        <div><label style="font-weight:400; font-size:13px;">🟤 ฟันธงขาดเช็กอินหลัง</label><input type="time" id="settingsAbsentCutoff"></div>
+      </div>
+      <div id="settingsError" class="error-box hidden"></div>
+      <div id="settingsSuccess" class="success-box hidden">บันทึกการตั้งค่าเรียบร้อยแล้ว</div>
+      <button class="btn-primary" id="btnSaveSettings" style="width:auto; padding:10px 24px;">บันทึกการตั้งค่า</button>
+    </div>
+
+    <div class="card">
+      <h2>👤 จัดการบัญชีหัวหน้า (เฉพาะชวนชัย)</h2>
+      <p class="sub" style="margin:0 0 12px;">เพิ่มบัญชีหัวหน้าแบบ PIN ใหม่ หรือปิด/เปิดใช้งานบัญชีที่มีอยู่ — ไม่รวมบัญชีอีเมลของชวนชัยเอง (ต้องสร้างผ่าน Supabase Dashboard เท่านั้น) รีเซ็ต PIN ให้หัวหน้า PIN ใช้ปุ่ม "รีเซ็ต PIN" ในตาราง "รายชื่อเจ้าหน้าที่ทั้งหมด" ด้านบนได้เลย (ตารางนั้นแสดงบัญชีหัวหน้าอยู่แล้ว)</p>
+      <label for="newSupFullName">ชื่อ-นามสกุล *</label>
+      <input type="text" id="newSupFullName" placeholder="เช่น ร.ต.อ. สมชาย ใจดี">
+      <label for="newSupRankTitle">ยศ/ตำแหน่ง (ไม่บังคับ)</label>
+      <input type="text" id="newSupRankTitle" placeholder="เช่น ร.ต.อ.">
+      <label for="newSupNickname">ชื่อเล่น (ไม่บังคับ)</label>
+      <input type="text" id="newSupNickname" placeholder="เช่น ชาย">
+      <div id="newSupError" class="error-box hidden"></div>
+      <div id="newSupSuccess" class="success-box hidden">เพิ่มบัญชีหัวหน้าใหม่เรียบร้อยแล้ว — แจ้งให้เขาไปตั้ง PIN เองครั้งแรกที่หน้า "ดูรายงาน" (report.html)</div>
+      <button class="btn-primary" id="btnAddSupervisor" style="width:auto; padding:10px 24px;">เพิ่มบัญชีหัวหน้าใหม่</button>
+
+      <h3 style="font-size:15px; margin:24px 0 8px;">บัญชีหัวหน้า PIN ทั้งหมด</h3>
+      <div id="supervisorsWrap"><div class="center">กำลังโหลด...</div></div>
+    </div>
+  </section>
+
+  <!-- Modal แก้ไขสถานะ (override) -->
+  <div id="overrideModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>แก้ไขสถานะ</h2>
+      <p class="sub" id="overrideModalWho" style="margin:0 0 4px;">-</p>
+      <label for="overrideNewStatus">สถานะใหม่</label>
+      <select id="overrideNewStatus">
+        <option value="green">🟢 ดีเยี่ยม</option>
+        <option value="yellow">🟡 ทันพอดี</option>
+        <option value="orange">🟠 มาเลท</option>
+        <option value="red">🔴 สาย</option>
+      </select>
+      <label for="overrideReason">เหตุผล (อย่างน้อย 5 ตัวอักษร) *</label>
+      <textarea id="overrideReason" maxlength="500" placeholder="เช่น รถเสียระหว่างทาง แจ้งล่วงหน้าแล้ว"></textarea>
+      <div id="overrideError" class="error-box hidden"></div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn-small" id="btnOverrideCancel" style="flex:1;">ยกเลิก</button>
+        <button class="btn-primary" id="btnOverrideSubmit" style="flex:1; margin-top:0;">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal แก้ไขวันทำงาน -->
+  <div id="workdaysModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>แก้ไขวันทำงาน</h2>
+      <p class="sub" id="workdaysModalWho" style="margin:0 0 12px;">-</p>
+      <div class="day-checks" id="workdaysCheckboxes"></div>
+      <div id="workdaysError" class="error-box hidden"></div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn-small" id="btnWorkdaysCancel" style="flex:1;">ยกเลิก</button>
+        <button class="btn-primary" id="btnWorkdaysSubmit" style="flex:1; margin-top:0;">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var SUPABASE_URL = "https://aamzsbuwfdyljdvwaifb.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_5LSUhgfmbb90ckwvNbJwgw_wR2z0ik_";
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  var screenLogin = document.getElementById("screen-login");
+  var screenMain = document.getElementById("screen-main");
+  var loginEmail = document.getElementById("loginEmail");
+  var loginPassword = document.getElementById("loginPassword");
+  var loginError = document.getElementById("loginError");
+  var whoami = document.getElementById("whoami");
+
+  var statusMap = {
+    green:  { emoji: "🟢", text: "ดีเยี่ยม" },
+    yellow: { emoji: "🟡", text: "ทันพอดี" },
+    orange: { emoji: "🟠", text: "มาเลท" },
+    red:    { emoji: "🔴", text: "สาย" }
+  };
+
+  var lastTodayRows = [];   // เก็บไว้สำหรับ export excel
+  var lastHistRows = [];    // เก็บไว้สำหรับ export excel
+  var currentOverrideCheckinId = null;
+  var currentOverrideReloadFn = null;
+
+  function showError(msg){
+    loginError.textContent = msg;
+    loginError.classList.remove("hidden");
+  }
+
+  // ================= Login =================
+  document.getElementById("btnLogin").addEventListener("click", function(){
+    loginError.classList.add("hidden");
+    var email = loginEmail.value.trim();
+    var pw = loginPassword.value;
+    if (!email || !pw) { showError("กรุณากรอกอีเมลและรหัสผ่าน"); return; }
+
+    sb.auth.signInWithPassword({ email: email, password: pw }).then(function(res){
+      if (res.error) {
+        showError("เข้าสู่ระบบไม่สำเร็จ: " + res.error.message);
+        return;
+      }
+      checkSupervisorThenLoad();
+    });
+  });
+
+  function checkSupervisorThenLoad(){
+    // ยืนยันว่าบัญชีนี้ผูกกับ officer ที่ is_supervisor = true จริง (RLS จะกันข้อมูลอยู่แล้ว แต่เช็กซ้ำเพื่อ UX ที่ชัดเจน)
+    sb.rpc("do_list_officers_admin").then(function(res){
+      if (res.error || !res.data || res.data.length === 0) {
+        showError("บัญชีนี้ไม่มีสิทธิ์เข้าแดชบอร์ดหัวหน้า (ไม่พบสิทธิ์ is_supervisor) — ติดต่อผู้ดูแลระบบ");
+        sb.auth.signOut();
+        return;
+      }
+      screenLogin.classList.add("hidden");
+      screenMain.classList.remove("hidden");
+      renderOfficersTable(res.data);
+      populateHistOfficerFilter(res.data);
+      loadTodayCheckins();
+      loadMottoAdmin();
+      loadAbsentees();
+      loadHolidays();
+      loadStatsPeriodOverrides();
+      loadSettingsAdmin();
+      renderSupervisorsMgmt(res.data);
+      var today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
+      document.getElementById("histStart").value = today;
+      document.getElementById("histEnd").value = today;
+      sb.auth.getUser().then(function(ures){
+        var email = ures.data && ures.data.user ? ures.data.user.email : "-";
+        whoami.textContent = "เข้าสู่ระบบด้วย " + email;
+      });
+    });
+  }
+
+  document.getElementById("btnLogout").addEventListener("click", function(){
+    sb.auth.signOut().then(function(){
+      screenMain.classList.add("hidden");
+      screenLogin.classList.remove("hidden");
+      loginEmail.value = "";
+      loginPassword.value = "";
+    });
+  });
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ================= กล่องม็อตโต้ / ข้อความบริการ (หมุนเวียน 3 ข้อความ) =================
+  var MOTTO_SLOTS = [1, 2, 3];
+
+  function updateMottoCharCount(slot){
+    var input = document.getElementById("mottoInput" + slot);
+    var count = document.getElementById("mottoCharCount" + slot);
+    var len = input.value.length;
+    count.textContent = len + " / 300";
+    count.classList.toggle("over", len > 300);
+  }
+  MOTTO_SLOTS.forEach(function(slot){
+    document.getElementById("mottoInput" + slot).addEventListener("input", function(){ updateMottoCharCount(slot); });
+  });
+
+  function loadMottoAdmin(){
+    sb.rpc("do_list_mottos").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) return;
+      document.getElementById("mottoInput1").value = res.data.slot_1 || "";
+      document.getElementById("mottoInput2").value = res.data.slot_2 || "";
+      document.getElementById("mottoInput3").value = res.data.slot_3 || "";
+      MOTTO_SLOTS.forEach(function(slot){
+        updateMottoCharCount(slot);
+        document.getElementById("mottoSlot" + slot + "Badge").classList.toggle("hidden", res.data.active_slot !== slot);
+      });
+    });
+  }
+
+  MOTTO_SLOTS.forEach(function(slot){
+    document.getElementById("btnSaveMotto" + slot).addEventListener("click", function(){
+      var input = document.getElementById("mottoInput" + slot);
+      var errEl = document.getElementById("mottoError" + slot);
+      var successEl = document.getElementById("mottoSuccess" + slot);
+      errEl.classList.add("hidden");
+      successEl.classList.add("hidden");
+      var text = input.value.trim();
+      if (!text) { errEl.textContent = "กรุณากรอกข้อความ"; errEl.classList.remove("hidden"); return; }
+      if (text.length > 300) { errEl.textContent = "ข้อความยาวเกิน 300 ตัวอักษร"; errEl.classList.remove("hidden"); return; }
+
+      var btn = document.getElementById("btnSaveMotto" + slot);
+      btn.disabled = true;
+      btn.textContent = "กำลังบันทึก...";
+      sb.rpc("do_set_motto", { p_slot: slot, p_new_motto: text }).then(function(res){
+        btn.disabled = false;
+        btn.textContent = "บันทึกข้อความที่ " + slot;
+        if (res.error || !res.data || res.data.ok !== true) {
+          var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+          errEl.textContent = "บันทึกไม่สำเร็จ: " + code;
+          errEl.classList.remove("hidden");
+          return;
+        }
+        successEl.classList.remove("hidden");
+      });
+    });
+  });
+
+  // ================= ตารางเช็กอินวันนี้ =================
+  function loadTodayCheckins(){
+    var todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD
+    document.getElementById("todayLabel").textContent =
+      new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day:"numeric", month:"long", year:"numeric" });
+
+    sb.from("check_in")
+      .select("id, checked_in_at, status, override_status, distance_m, ready_for_duty, note, remark, photo_path, incomplete_checkin, override_reason, override_at, retention_hold, photo_deleted_at, officer!check_in_officer_id_fkey(full_name, rank_title, nickname), override_by_officer:officer!check_in_override_by_fkey(full_name)")
+      .eq("local_date", todayStr)
+      .order("checked_in_at", { ascending: true })
+      .then(function(res){
+        var wrap = document.getElementById("todayTableWrap");
+        if (res.error) {
+          wrap.innerHTML = '<div class="center">โหลดข้อมูลไม่สำเร็จ: ' + escapeHtml(res.error.message) + '</div>';
+          return;
+        }
+        var rows = res.data || [];
+        var getTodayName = function(r){ return r.officer ? (r.officer.full_name + (r.officer.nickname ? " (" + r.officer.nickname + ")" : "")) : "-"; };
+        lastTodayRows = rows.map(function(r){
+          return {
+            name: getTodayName(r),
+            time: new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }),
+            status: statusMap[r.override_status || r.status] ? statusMap[r.override_status || r.status].text : (r.override_status || r.status),
+            incomplete: r.incomplete_checkin ? "ไม่สมบูรณ์" : "",
+            distance: r.distance_m,
+            note: r.note || "",
+            remark: r.remark || "",
+            override_by: r.override_by_officer ? r.override_by_officer.full_name : "",
+            override_reason: r.override_reason || ""
+          };
+        });
+        renderNotReadyAlert(rows, getTodayName);
+        if (rows.length === 0) {
+          wrap.innerHTML = '<div class="center">ยังไม่มีใครเช็กอินวันนี้</div>';
+          return;
+        }
+        wrap.innerHTML = renderCheckinTable(rows, getTodayName, function(r){ return r.override_by_officer ? r.override_by_officer.full_name : (r.override_by_name || ""); }, false);
+
+        wrap.querySelectorAll("img[data-photo]").forEach(function(img){
+          var path = img.getAttribute("data-photo");
+          sb.storage.from("checkin-photos").createSignedUrl(path, 300).then(function(sres){
+            if (sres.error || !sres.data) return;
+            img.src = sres.data.signedUrl;
+            img.addEventListener("click", function(){
+              window.open(sres.data.signedUrl, "_blank");
+            });
+          });
+        });
+
+        wrap.querySelectorAll("button[data-override]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var name = btn.getAttribute("data-name");
+            openOverrideModal(btn.getAttribute("data-override"), name, loadTodayCheckins);
+          });
+        });
+        attachRetentionButtons(wrap, loadTodayCheckins);
+        attachRemarkToggles(wrap);
+      });
+  }
+
+  // ================= ตัดข้อความหมายเหตุเพิ่มเติมที่ยาวเกินไปในตาราง + ปุ่มอ่านเพิ่มเติม =================
+  var REMARK_TRUNCATE_LEN = 70;
+  function renderRemarkCell(remark){
+    var r = remark || "";
+    if (!r) return "-";
+    if (r.length <= REMARK_TRUNCATE_LEN) return escapeHtml(r);
+    var shortText = escapeHtml(r.slice(0, REMARK_TRUNCATE_LEN)) + "...";
+    var fullText = escapeHtml(r);
+    return '<span class="remark-short">' + shortText + '</span>' +
+      '<span class="remark-full hidden">' + fullText + '</span>' +
+      '<button type="button" class="remark-toggle-btn" data-remark-toggle="1">อ่านเพิ่มเติม</button>';
+  }
+  function attachRemarkToggles(wrap){
+    wrap.querySelectorAll("button[data-remark-toggle]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var cell = btn.closest("td");
+        var shortEl = cell.querySelector(".remark-short");
+        var fullEl = cell.querySelector(".remark-full");
+        var expanded = !fullEl.classList.contains("hidden");
+        shortEl.classList.toggle("hidden", !expanded);
+        fullEl.classList.toggle("hidden", expanded);
+        btn.textContent = expanded ? "อ่านเพิ่มเติม" : "ย่อ";
+      });
+    });
+  }
+
+  // ================= วันนี้แจ้งไม่พร้อม (เน้นเหตุผลจากช่องหมายเหตุสั้นก่อนเช็กอิน) =================
+  function renderNotReadyAlert(rows, getName){
+    var wrap = document.getElementById("notReadyWrap");
+    var notReady = (rows || []).filter(function(r){ return r.ready_for_duty === false; });
+    if (notReady.length === 0) {
+      wrap.innerHTML = '<div class="center">✅ วันนี้ทุกคนแจ้งว่าพร้อมปฏิบัติหน้าที่</div>';
+      return;
+    }
+    var html = '<table><thead><tr><th>ชื่อ</th><th>เวลา</th><th>หมายเหตุ</th></tr></thead><tbody>';
+    notReady.forEach(function(r){
+      var name = getName(r);
+      var timeStr = new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok", hour:"2-digit", minute:"2-digit" });
+      html += '<tr class="not-ready-row"><td>' + escapeHtml(name) + '</td><td>' + timeStr + '</td><td class="note-cell">' + escapeHtml(r.note || "-") + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  // ================= ตารางแสดงผลรายการเช็กอิน (ใช้ร่วมกันทั้งวันนี้/ประวัติ) =================
+  // rows: array จาก DB, getName/getOverrideByName: function(r) -> string, showDate: bool (ประวัติต้องมีคอลัมน์วันที่)
+  function renderCheckinTable(rows, getName, getOverrideByName, showDate){
+    var dateHeader = showDate ? '<th>วันที่</th>' : '';
+    var html = '<table><thead><tr>' +
+      dateHeader + '<th>ชื่อ</th><th>เวลา</th><th>สถานะ</th><th>ระยะห่าง</th><th>ความพร้อม</th><th>หมายเหตุ</th><th>หมายเหตุเพิ่มเติม</th><th>รูป</th><th></th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      var eff = r.override_status || r.status;
+      var s = statusMap[eff] || { emoji: "⚪", text: eff };
+      var t = new Date(r.checked_in_at);
+      var timeStr = t.toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+      var dateStr = showDate ? ('<td>' + escapeHtml(r.local_date || "") + '</td>') : '';
+      var distStr = (r.distance_m === null || r.distance_m === undefined) ? '<span class="muted">ไม่ทราบ</span>' : ("~" + r.distance_m + " ม.");
+      var readyStr = r.ready_for_duty === null || r.ready_for_duty === undefined
+        ? '<span class="muted">-</span>'
+        : (r.ready_for_duty ? "✅ พร้อม" : "⚠️ ไม่พร้อม");
+      var name = getName(r);
+      var purpleTag = r.incomplete_checkin ? ' <span class="badge purple">🟣 ไม่สมบูรณ์</span>' : '';
+      var holdTag = r.retention_hold ? ' <span class="badge gray">🔒 กันลบรูป</span>' : '';
+      var overrideByName = getOverrideByName(r);
+      var overrideInfo = r.override_status
+        ? '<span class="override-info">แก้ไขโดย ' + escapeHtml(overrideByName || "-") +
+          (r.override_at ? (' เมื่อ ' + new Date(r.override_at).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })) : '') +
+          (r.override_reason ? (': ' + escapeHtml(r.override_reason)) : '') + '</span>'
+        : '';
+      var photoCell;
+      if (r.photo_deleted_at) {
+        photoCell = '<span class="muted" style="font-size:12px; white-space:nowrap;">🗑️ ลบแล้ว (PDPA)</span>';
+      } else if (!r.photo_path) {
+        photoCell = '<span class="muted">-</span>';
+      } else {
+        photoCell = '<span class="thumb-wrap"><img class="thumb" data-photo="' + escapeHtml(r.photo_path) + '" src="" alt="รูป"></span>';
+      }
+      var retentionBtnLabel = r.retention_hold ? "🔓 ปลดล็อกรูป" : "🔒 กันลบรูป";
+      var retentionBtn = r.photo_deleted_at ? '' :
+        (' <button class="btn-row-action" data-retention="' + r.id + '" data-hold="' + (r.retention_hold ? "0" : "1") + '" data-name="' + escapeHtml(name) + '">' + retentionBtnLabel + '</button>');
+      html += '<tr>' +
+        dateStr +
+        '<td>' + escapeHtml(name) + '</td>' +
+        '<td>' + timeStr + '</td>' +
+        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + overrideInfo + '</td>' +
+        '<td>' + distStr + '</td>' +
+        '<td>' + readyStr + '</td>' +
+        '<td class="note-cell">' + escapeHtml(r.note || "-") + '</td>' +
+        '<td class="note-cell">' + renderRemarkCell(r.remark) + '</td>' +
+        '<td>' + photoCell + '</td>' +
+        '<td style="white-space:nowrap;"><button class="btn-row-action" data-override="' + r.id + '" data-name="' + escapeHtml(name) + '">แก้ไขสถานะ</button>' + retentionBtn + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  // ================= ปุ่มกันลบรูป (retention hold) — ใช้ร่วมกันทั้งวันนี้/ประวัติ =================
+  function attachRetentionButtons(wrap, reloadFn){
+    wrap.querySelectorAll("button[data-retention]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-retention");
+        var hold = btn.getAttribute("data-hold") === "1";
+        var name = btn.getAttribute("data-name");
+        var actionLabel = hold ? "กันไม่ให้ลบรูป" : "ปลดล็อกรูป (กลับไปลบตามกำหนดปกติ)";
+        if (!confirm(actionLabel + ' ของ "' + name + '" ใช่หรือไม่?')) return;
+        btn.disabled = true;
+        btn.textContent = "กำลังบันทึก...";
+        sb.rpc("do_set_retention_hold", { p_check_in_id: id, p_hold: hold }).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            alert("บันทึกไม่สำเร็จ: " + code);
+            btn.disabled = false;
+            btn.textContent = hold ? "🔒 กันลบรูป" : "🔓 ปลดล็อกรูป";
+            return;
+          }
+          if (reloadFn) reloadFn();
+        });
+      });
+    });
+  }
+
+  // ================= ยังไม่เช็กอินวันนี้ (สีน้ำตาลเข้ม / ขาดเช็กอิน) =================
+  function loadAbsentees(){
+    var wrap = document.getElementById("absenteesWrap");
+    sb.rpc("do_get_absentees", { p_date: null }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        wrap.innerHTML = '<div class="center">โหลดข้อมูลไม่สำเร็จ</div>';
+        return;
+      }
+      if (res.data.too_early) {
+        wrap.innerHTML = '<div class="center">ยังไม่ถึงเวลาฟันธง — ระบบจะแสดงรายชื่อหลังเวลา ' + escapeHtml(res.data.cutoff_time || "16:30") + ' น.</div>';
+        return;
+      }
+      var rows = res.data.rows || [];
+      if (rows.length === 0) {
+        wrap.innerHTML = '<div class="center">✅ ไม่มีใครขาดเช็กอินวันนี้</div>';
+        return;
+      }
+      var html = '<table><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th></tr></thead><tbody>';
+      rows.forEach(function(o){
+        var name = o.full_name + (o.nickname ? " (" + o.nickname + ")" : "");
+        html += '<tr><td><span class="badge brown">🟤 ' + escapeHtml(name) + '</span></td><td>' + escapeHtml(o.rank_title || "-") + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+    });
+  }
+
+  // ================= Modal แก้ไขสถานะ (override) =================
+  var overrideModal = document.getElementById("overrideModal");
+  var overrideModalWho = document.getElementById("overrideModalWho");
+  var overrideNewStatus = document.getElementById("overrideNewStatus");
+  var overrideReason = document.getElementById("overrideReason");
+  var overrideError = document.getElementById("overrideError");
+
+  function openOverrideModal(checkinId, name, reloadFn){
+    currentOverrideCheckinId = checkinId;
+    currentOverrideReloadFn = reloadFn;
+    overrideModalWho.textContent = "แก้ไขสถานะของ: " + name;
+    overrideNewStatus.value = "green";
+    overrideReason.value = "";
+    overrideError.classList.add("hidden");
+    overrideModal.classList.remove("hidden");
+  }
+  document.getElementById("btnOverrideCancel").addEventListener("click", function(){
+    overrideModal.classList.add("hidden");
+  });
+  document.getElementById("btnOverrideSubmit").addEventListener("click", function(){
+    overrideError.classList.add("hidden");
+    var reason = overrideReason.value.trim();
+    if (reason.length < 5) {
+      overrideError.textContent = "กรุณาระบุเหตุผลอย่างน้อย 5 ตัวอักษร";
+      overrideError.classList.remove("hidden");
+      return;
+    }
+    var btn = document.getElementById("btnOverrideSubmit");
+    btn.disabled = true;
+    btn.textContent = "กำลังบันทึก...";
+    sb.rpc("do_override", {
+      p_check_in_id: currentOverrideCheckinId,
+      p_new_status: overrideNewStatus.value,
+      p_reason: reason
+    }).then(function(res){
+      btn.disabled = false;
+      btn.textContent = "บันทึก";
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        var msgMap = { not_supervisor: "ไม่มีสิทธิ์แก้ไข", invalid_status: "สถานะไม่ถูกต้อง", reason_too_short: "เหตุผลสั้นเกินไป", checkin_not_found: "ไม่พบรายการเช็กอินนี้" };
+        overrideError.textContent = "บันทึกไม่สำเร็จ: " + (msgMap[code] || code);
+        overrideError.classList.remove("hidden");
+        return;
+      }
+      overrideModal.classList.add("hidden");
+      if (currentOverrideReloadFn) currentOverrideReloadFn();
+    });
+  });
+
+  // ================= สรุปหมายเหตุเพิ่มเติมตามคีย์เวิร์ด (Tier 2: จับคำแบบตายตัว ไม่พึ่ง AI ภายนอก) =================
+  var REMARK_KEYWORDS = {
+    ot:         { emoji: "🕐", label: "OT/เลิกดึก",            words: ["ดึก","ล่วงเวลา","OT","เลิกงานดึก","ทุ่ม"] },
+    goal:       { emoji: "🎯", label: "เป้าหมาย/แผนวันนี้",     words: ["ตั้งใจ","เป้าหมาย","ตั้งเป้า","วันนี้จะ"] },
+    assigned:   { emoji: "📌", label: "งานมอบหมายเพิ่มเติม",   words: ["ได้รับมอบหมาย","มอบหมายเพิ่ม","งานพิเศษ","งานเพิ่มเติม","สั่งให้ทำ"] },
+    collective: { emoji: "🤝", label: "ทำเพื่อส่วนรวม",        words: ["เพื่อส่วนรวม","ส่วนรวม","เพื่อทีม","เพื่อหน่วยงาน","นอกเหนือหน้าที่"] },
+    issue:      { emoji: "💡", label: "ปัญหา/ข้อเสนอแนะ",      words: ["ปัญหา","อุปสรรค","ติดขัด","เสนอแนะ","ข้อเสนอแนะ"] },
+    praise:     { emoji: "👍", label: "ชื่นชม/บวก",            words: ["ขอบคุณ","ช่วยเหลือ","ภูมิใจ","ดีใจ","ชื่นชม"] }
+  };
+  // นับซ้ำได้ทุกกลุ่มที่ตรง (1 หมายเหตุอาจเข้าได้หลายหมวดพร้อมกัน) — ถ้าไม่ตรงหมวดไหนเลย ให้ตกไปหมวด "อื่นๆ"
+  function tagRemark(text){
+    var tags = [];
+    Object.keys(REMARK_KEYWORDS).forEach(function(key){
+      var hit = REMARK_KEYWORDS[key].words.some(function(w){ return text.indexOf(w) !== -1; });
+      if (hit) tags.push(key);
+    });
+    if (tags.length === 0) tags.push("other");
+    return tags;
+  }
+  function renderRemarkSummary(rows){
+    var card = document.getElementById("remarkSummaryCard");
+    var wrap = document.getElementById("remarkSummaryWrap");
+    var withRemark = (rows || []).filter(function(r){ return r.remark && r.remark.trim().length > 0; });
+    card.classList.remove("hidden");
+    if (withRemark.length === 0) {
+      wrap.innerHTML = '<div class="center">ไม่มีหมายเหตุเพิ่มเติมในช่วงที่ค้นหา</div>';
+      return;
+    }
+    var byName = {};
+    withRemark.forEach(function(r){
+      var tags = tagRemark(r.remark);
+      if (!byName[r.name]) byName[r.name] = { ot:0, goal:0, assigned:0, collective:0, issue:0, praise:0, other:0, total:0 };
+      tags.forEach(function(t){ byName[r.name][t]++; });
+      byName[r.name].total++;
+    });
+    var names = Object.keys(byName).sort();
+    var html = '<table><thead><tr><th>ชื่อ</th><th>🕐 OT/เลิกดึก</th><th>🎯 เป้าหมาย</th><th>📌 งานมอบหมายเพิ่ม</th><th>🤝 เพื่อส่วนรวม</th><th>💡 ปัญหา/เสนอแนะ</th><th>👍 ชื่นชม</th><th>📋 อื่นๆ</th><th>รวมที่มีหมายเหตุ</th><th></th></tr></thead><tbody>';
+    names.forEach(function(name){
+      var c = byName[name];
+      html += '<tr><td>' + escapeHtml(name) + '</td><td>' + c.ot + '</td><td>' + c.goal + '</td><td>' + c.assigned + '</td><td>' + c.collective + '</td><td>' + c.issue + '</td><td>' + c.praise + '</td><td>' + c.other + '</td><td><b>' + c.total + '</b></td>' +
+        '<td><button class="btn-row-action" data-drill="' + escapeHtml(name) + '">ดูรายละเอียด</button></td></tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll("button[data-drill]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var name = btn.getAttribute("data-drill");
+        var sel = document.getElementById("histOfficerFilter");
+        var matchOpt = Array.prototype.find.call(sel.options, function(o){ return o.textContent === name; });
+        if (matchOpt) {
+          sel.value = matchOpt.value;
+          document.getElementById("btnHistSearch").click();
+        }
+        document.getElementById("histTableWrap").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+  }
+
+  // ================= ประวัติย้อนหลัง =================
+  function populateHistOfficerFilter(officers){
+    var sel = document.getElementById("histOfficerFilter");
+    var html = '<option value="">ทุกคน</option>';
+    (officers || []).forEach(function(o){
+      if (o.login_method === "auth") return; // ไม่ต้องกรองหาหัวหน้า
+      html += '<option value="' + o.id + '">' + escapeHtml(o.full_name + (o.nickname ? " (" + o.nickname + ")" : "")) + '</option>';
+    });
+    sel.innerHTML = html;
+  }
+
+  document.getElementById("btnHistSearch").addEventListener("click", function(){
+    var histError = document.getElementById("histError");
+    histError.classList.add("hidden");
+    var start = document.getElementById("histStart").value;
+    var end = document.getElementById("histEnd").value;
+    var officerId = document.getElementById("histOfficerFilter").value || null;
+    if (!start || !end) {
+      histError.textContent = "กรุณาเลือกช่วงวันที่ให้ครบ";
+      histError.classList.remove("hidden");
+      return;
+    }
+    var wrap = document.getElementById("histTableWrap");
+    wrap.innerHTML = '<div class="center">กำลังค้นหา...</div>';
+    sb.rpc("do_get_history", { p_start_date: start, p_end_date: end, p_target_officer_id: officerId }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        histError.textContent = "ค้นหาไม่สำเร็จ: " + code;
+        histError.classList.remove("hidden");
+        wrap.innerHTML = '';
+        return;
+      }
+      var rows = res.data.rows || [];
+      lastHistRows = rows.map(function(r){
+        return {
+          date: r.local_date,
+          name: r.full_name + (r.nickname ? " (" + r.nickname + ")" : ""),
+          time: new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }),
+          status: statusMap[r.effective_status] ? statusMap[r.effective_status].text : r.effective_status,
+          incomplete: r.incomplete_checkin ? "ไม่สมบูรณ์" : "",
+          distance: r.distance_m,
+          note: r.note || "",
+          remark: r.remark || "",
+          override_by: r.override_by_name || "",
+          override_reason: r.override_reason || ""
+        };
+      });
+      renderRemarkSummary(lastHistRows);
+      if (rows.length === 0) {
+        wrap.innerHTML = '<div class="center">ไม่พบข้อมูลในช่วงวันที่นี้</div>';
+        return;
+      }
+      wrap.innerHTML = renderCheckinTable(rows, function(r){ return r.full_name + (r.nickname ? " (" + r.nickname + ")" : ""); }, function(r){ return r.override_by_name; }, true);
+
+      wrap.querySelectorAll("img[data-photo]").forEach(function(img){
+        var path = img.getAttribute("data-photo");
+        if (!path) return;
+        sb.storage.from("checkin-photos").createSignedUrl(path, 300).then(function(sres){
+          if (sres.error || !sres.data) return;
+          img.src = sres.data.signedUrl;
+          img.addEventListener("click", function(){ window.open(sres.data.signedUrl, "_blank"); });
+        });
+      });
+
+      wrap.querySelectorAll("button[data-override]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var name = btn.getAttribute("data-name");
+          openOverrideModal(btn.getAttribute("data-override"), name, function(){
+            document.getElementById("btnHistSearch").click();
+          });
+        });
+      });
+      attachRetentionButtons(wrap, function(){ document.getElementById("btnHistSearch").click(); });
+      attachRemarkToggles(wrap);
+    });
+  });
+
+  // ================= Export Excel =================
+  function exportRowsToExcel(rows, filename){
+    if (!rows || rows.length === 0) { alert("ไม่มีข้อมูลให้ export"); return; }
+    var headerMap = [
+      ["date", "วันที่"], ["name", "ชื่อ"], ["time", "เวลา"], ["status", "สถานะ"],
+      ["incomplete", "หมายเหตุระบบ"], ["distance", "ระยะห่าง (ม.)"], ["note", "หมายเหตุ"],
+      ["remark", "หมายเหตุเพิ่มเติม"],
+      ["override_by", "แก้ไขโดย"], ["override_reason", "เหตุผลแก้ไข"]
+    ];
+    var hasDate = rows.some(function(r){ return r.date !== undefined; });
+    var cols = hasDate ? headerMap : headerMap.filter(function(h){ return h[0] !== "date"; });
+    var data = rows.map(function(r){
+      var row = {};
+      cols.forEach(function(h){ row[h[1]] = r[h[0]] === undefined || r[h[0]] === null ? "" : r[h[0]]; });
+      return row;
+    });
+    var ws = XLSX.utils.json_to_sheet(data);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "รายงาน");
+    XLSX.writeFile(wb, filename);
+  }
+  document.getElementById("btnExportToday").addEventListener("click", function(){
+    exportRowsToExcel(lastTodayRows, "checkin-today-" + new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" }) + ".xlsx");
+  });
+  document.getElementById("btnExportHist").addEventListener("click", function(){
+    var start = document.getElementById("histStart").value;
+    var end = document.getElementById("histEnd").value;
+    exportRowsToExcel(lastHistRows, "checkin-history-" + start + "_to_" + end + ".xlsx");
+  });
+
+  // ================= ตารางเจ้าหน้าที่ทั้งหมด + ปุ่มรีเซ็ต PIN =================
+  function renderOfficersTable(rows){
+    var wrap = document.getElementById("officersTableWrap");
+    if (!rows || rows.length === 0) {
+      wrap.innerHTML = '<div class="center">ยังไม่มีรายชื่อเจ้าหน้าที่</div>';
+      return;
+    }
+    var html = '<table><thead><tr><th>ชื่อ</th><th>ชื่อเล่น</th><th>ตำแหน่ง</th><th>สถานะ</th><th>PIN</th><th>วิธีเข้าระบบ</th><th>สิทธิ์หัวหน้า</th><th>วันทำงาน</th><th></th></tr></thead><tbody>';
+    rows.forEach(function(o){
+      var loginLabel = o.login_method === "auth" ? "Email" : "PIN";
+      var canReset = o.login_method !== "auth" && !o.needs_pin_setup;
+      html += '<tr>' +
+        '<td>' + escapeHtml(o.full_name) + '</td>' +
+        '<td>' + escapeHtml(o.nickname || "-") + '</td>' +
+        '<td>' + escapeHtml(o.rank_title || "-") + '</td>' +
+        '<td>' + (o.active ? "ใช้งาน" : '<span class="muted">ปิดใช้งาน</span>') + '</td>' +
+        '<td>' + (o.login_method === "auth" ? '<span class="muted">-</span>' : (o.needs_pin_setup ? '<span class="pin-missing">ยังไม่ตั้ง</span>' : '<span class="pin-ok">ตั้งแล้ว</span>')) + '</td>' +
+        '<td>' + loginLabel + '</td>' +
+        '<td>' + (o.is_supervisor ? "หัวหน้า" : "-") + '</td>' +
+        '<td>' + escapeHtml(formatWorkDays(o.work_days)) + '</td>' +
+        '<td style="white-space:nowrap;">' +
+          (canReset ? '<button class="btn-danger-small" data-reset="' + o.id + '">รีเซ็ต PIN</button> ' : '') +
+          '<button class="btn-row-action" data-workdays="' + o.id + '">แก้วันทำงาน</button>' +
+        '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll("button[data-reset]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-reset");
+        var row = btn.closest("tr");
+        var name = row ? row.children[0].textContent : "";
+        if (!confirm('รีเซ็ต PIN ของ "' + name + '" ใช่หรือไม่?\nเจ้าหน้าที่คนนี้จะต้องตั้ง PIN ใหม่เองตอนล็อกอินครั้งถัดไป')) return;
+        btn.disabled = true;
+        btn.textContent = "กำลังรีเซ็ต...";
+        sb.rpc("do_reset_pin", { p_officer_id: id }).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            alert("รีเซ็ต PIN ไม่สำเร็จ: " + (res.error ? res.error.message : (res.data && res.data.error)));
+            btn.disabled = false;
+            btn.textContent = "รีเซ็ต PIN";
+            return;
+          }
+          sb.rpc("do_list_officers_admin").then(function(r2){
+            if (!r2.error) { renderOfficersTable(r2.data); renderSupervisorsMgmt(r2.data); }
+          });
+        });
+      });
+    });
+
+    wrap.querySelectorAll("button[data-workdays]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-workdays");
+        var officer = rows.filter(function(o){ return o.id === id; })[0];
+        if (!officer) return;
+        var name = officer.full_name + (officer.nickname ? " (" + officer.nickname + ")" : "");
+        openWorkdaysModal(id, name, officer.work_days);
+      });
+    });
+  }
+
+  // ================= วันทำงานรายคน =================
+  var DAY_LABELS = { 1:"จ", 2:"อ", 3:"พ", 4:"พฤ", 5:"ศ", 6:"ส", 7:"อา" };
+  function formatWorkDays(arr){
+    if (!arr || arr.length === 0) return "-";
+    var sorted = arr.slice().sort(function(a,b){ return a - b; });
+    if (sorted.length === 7) return "ทุกวัน";
+    if (sorted.join(",") === "1,2,3,4,5") return "จันทร์-ศุกร์";
+    return sorted.map(function(d){ return DAY_LABELS[d] || d; }).join(",");
+  }
+
+  var currentWorkdaysOfficerId = null;
+  var workdaysModal = document.getElementById("workdaysModal");
+  function openWorkdaysModal(id, name, currentDays){
+    currentWorkdaysOfficerId = id;
+    document.getElementById("workdaysModalWho").textContent = "แก้ไขวันทำงานของ: " + name;
+    var box = document.getElementById("workdaysCheckboxes");
+    var html = "";
+    [1,2,3,4,5,6,7].forEach(function(d){
+      var checked = (currentDays || []).indexOf(d) !== -1 ? "checked" : "";
+      html += '<label><input type="checkbox" value="' + d + '" ' + checked + '> ' + DAY_LABELS[d] + '</label>';
+    });
+    box.innerHTML = html;
+    document.getElementById("workdaysError").classList.add("hidden");
+    workdaysModal.classList.remove("hidden");
+  }
+  document.getElementById("btnWorkdaysCancel").addEventListener("click", function(){
+    workdaysModal.classList.add("hidden");
+  });
+  document.getElementById("btnWorkdaysSubmit").addEventListener("click", function(){
+    var box = document.getElementById("workdaysCheckboxes");
+    var days = Array.prototype.slice.call(box.querySelectorAll("input:checked")).map(function(cb){ return parseInt(cb.value, 10); });
+    var errEl = document.getElementById("workdaysError");
+    errEl.classList.add("hidden");
+    if (days.length === 0) {
+      errEl.textContent = "กรุณาเลือกอย่างน้อย 1 วัน";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    var btn = document.getElementById("btnWorkdaysSubmit");
+    btn.disabled = true;
+    btn.textContent = "กำลังบันทึก...";
+    sb.rpc("do_set_officer_workdays", { p_target_officer_id: currentWorkdaysOfficerId, p_work_days: days }).then(function(res){
+      btn.disabled = false;
+      btn.textContent = "บันทึก";
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        errEl.textContent = "บันทึกไม่สำเร็จ: " + code;
+        errEl.classList.remove("hidden");
+        return;
+      }
+      workdaysModal.classList.add("hidden");
+      sb.rpc("do_list_officers_admin").then(function(r2){
+        if (!r2.error) { renderOfficersTable(r2.data); renderSupervisorsMgmt(r2.data); }
+      });
+      loadAbsentees();
+    });
+  });
+
+  // ================= วันหยุดนักขัตฤกษ์ =================
+  function loadHolidays(){
+    var wrap = document.getElementById("holidaysWrap");
+    sb.rpc("do_list_holidays").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        wrap.innerHTML = '<div class="center">โหลดข้อมูลไม่สำเร็จ</div>';
+        return;
+      }
+      var rows = res.data.rows || [];
+      if (rows.length === 0) {
+        wrap.innerHTML = '<div class="center">ยังไม่มีวันหยุดที่กำหนดไว้</div>';
+        return;
+      }
+      var html = '<table><thead><tr><th>วันที่</th><th>รายละเอียด</th><th></th></tr></thead><tbody>';
+      rows.forEach(function(h){
+        html += '<tr><td>' + escapeHtml(h.holiday_date) + '</td><td>' + escapeHtml(h.description || "-") + '</td>' +
+          '<td><button class="btn-danger-small" data-delholiday="' + h.id + '">ลบ</button></td></tr>';
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+      wrap.querySelectorAll("button[data-delholiday]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          if (!confirm("ลบวันหยุดนี้ใช่หรือไม่?")) return;
+          sb.rpc("do_delete_holiday", { p_holiday_id: btn.getAttribute("data-delholiday") }).then(function(r2){
+            if (r2.error || !r2.data || r2.data.ok !== true) {
+              alert("ลบไม่สำเร็จ: " + (r2.data ? r2.data.error : (r2.error ? r2.error.message : "unknown")));
+              return;
+            }
+            loadHolidays();
+            loadAbsentees();
+          });
+        });
+      });
+    });
+  }
+
+  document.getElementById("btnAddHoliday").addEventListener("click", function(){
+    var errEl = document.getElementById("holidayError");
+    errEl.classList.add("hidden");
+    var date = document.getElementById("holidayDate").value;
+    var desc = document.getElementById("holidayDesc").value.trim();
+    if (!date) {
+      errEl.textContent = "กรุณาเลือกวันที่";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    var btn = document.getElementById("btnAddHoliday");
+    btn.disabled = true;
+    sb.rpc("do_add_holiday", { p_holiday_date: date, p_description: desc || null }).then(function(res){
+      btn.disabled = false;
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        var msgMap = { already_exists: "วันที่นี้มีอยู่แล้ว", invalid_date: "วันที่ไม่ถูกต้อง" };
+        errEl.textContent = "เพิ่มไม่สำเร็จ: " + (msgMap[code] || code);
+        errEl.classList.remove("hidden");
+        return;
+      }
+      document.getElementById("holidayDate").value = "";
+      document.getElementById("holidayDesc").value = "";
+      loadHolidays();
+      loadAbsentees();
+    });
+  });
+
+  // ================= วันเริ่มนับสถิติรายเดือน (stats_period_override) =================
+  var THAI_MONTHS_SHORT = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  function loadStatsPeriodOverrides(){
+    var wrap = document.getElementById("statsPeriodsWrap");
+    sb.rpc("do_list_stats_period_overrides").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        wrap.innerHTML = '<div class="center">โหลดข้อมูลไม่สำเร็จ</div>';
+        return;
+      }
+      var rows = res.data.rows || [];
+      if (rows.length === 0) {
+        wrap.innerHTML = '<div class="center">ยังไม่มีการตั้งวันเริ่มนับพิเศษ (ทุกเดือนนับตั้งแต่วันที่ 1 ตามปกติ)</div>';
+        return;
+      }
+      var html = '<table><thead><tr><th>เดือน</th><th>เริ่มนับวันที่</th><th></th></tr></thead><tbody>';
+      rows.forEach(function(r){
+        var monthLabel = (THAI_MONTHS_SHORT[r.month - 1] || r.month) + " " + (r.year + 543);
+        html += '<tr><td>' + escapeHtml(monthLabel) + '</td><td>' + escapeHtml(r.start_date) + '</td>' +
+          '<td><button class="btn-danger-small" data-delperiod="' + r.year + '-' + r.month + '">ลบ</button></td></tr>';
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+      wrap.querySelectorAll("button[data-delperiod]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          if (!confirm("ลบการตั้งค่านี้ใช่หรือไม่? (เดือนนั้นจะกลับไปนับตั้งแต่วันที่ 1 ตามปกติ)")) return;
+          var parts = btn.getAttribute("data-delperiod").split("-");
+          sb.rpc("do_delete_stats_period_override", { p_year: parseInt(parts[0], 10), p_month: parseInt(parts[1], 10) }).then(function(r2){
+            if (r2.error || !r2.data || r2.data.ok !== true) {
+              alert("ลบไม่สำเร็จ: " + (r2.data ? r2.data.error : (r2.error ? r2.error.message : "unknown")));
+              return;
+            }
+            loadStatsPeriodOverrides();
+          });
+        });
+      });
+    });
+  }
+
+  document.getElementById("btnSetStatsPeriod").addEventListener("click", function(){
+    var errEl = document.getElementById("statsPeriodError");
+    errEl.classList.add("hidden");
+    var monthVal = document.getElementById("statsPeriodMonth").value; // "YYYY-MM"
+    var startDate = document.getElementById("statsPeriodStartDate").value; // "YYYY-MM-DD"
+    if (!monthVal) { errEl.textContent = "กรุณาเลือกเดือน"; errEl.classList.remove("hidden"); return; }
+    if (!startDate) { errEl.textContent = "กรุณาเลือกวันเริ่มนับ"; errEl.classList.remove("hidden"); return; }
+    if (startDate.slice(0, 7) !== monthVal) {
+      errEl.textContent = "วันเริ่มนับต้องอยู่ในเดือนที่เลือก";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    var mParts = monthVal.split("-");
+    var year = parseInt(mParts[0], 10), month = parseInt(mParts[1], 10);
+    var btn = document.getElementById("btnSetStatsPeriod");
+    btn.disabled = true;
+    sb.rpc("do_set_stats_period_override", { p_year: year, p_month: month, p_start_date: startDate }).then(function(res){
+      btn.disabled = false;
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        var msgMap = { invalid_month: "เดือนไม่ถูกต้อง", date_not_in_month: "วันที่ไม่อยู่ในเดือนที่เลือก", not_supervisor: "ไม่มีสิทธิ์" };
+        errEl.textContent = "บันทึกไม่สำเร็จ: " + (msgMap[code] || code);
+        errEl.classList.remove("hidden");
+        return;
+      }
+      document.getElementById("statsPeriodMonth").value = "";
+      document.getElementById("statsPeriodStartDate").value = "";
+      loadStatsPeriodOverrides();
+    });
+  });
+
+  // ================= ตั้งค่าระบบผ่าน UI (เฉพาะชวนชัย, auth-only) =================
+  function loadSettingsAdmin(){
+    sb.rpc("do_get_settings").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) return;
+      document.getElementById("settingsOfficeLat").value = res.data.office_lat;
+      document.getElementById("settingsOfficeLng").value = res.data.office_lng;
+      document.getElementById("settingsGreenBefore").value = String(res.data.green_before).slice(0, 5);
+      document.getElementById("settingsYellowBefore").value = String(res.data.yellow_before).slice(0, 5);
+      document.getElementById("settingsOrangeBefore").value = String(res.data.orange_before).slice(0, 5);
+      document.getElementById("settingsAbsentCutoff").value = String(res.data.absent_cutoff_time).slice(0, 5);
+    });
+  }
+
+  document.getElementById("btnSaveSettings").addEventListener("click", function(){
+    var errEl = document.getElementById("settingsError");
+    var successEl = document.getElementById("settingsSuccess");
+    errEl.classList.add("hidden");
+    successEl.classList.add("hidden");
+    var lat = parseFloat(document.getElementById("settingsOfficeLat").value);
+    var lng = parseFloat(document.getElementById("settingsOfficeLng").value);
+    var green = document.getElementById("settingsGreenBefore").value;
+    var yellow = document.getElementById("settingsYellowBefore").value;
+    var orange = document.getElementById("settingsOrangeBefore").value;
+    var cutoff = document.getElementById("settingsAbsentCutoff").value;
+    if (isNaN(lat) || isNaN(lng) || !green || !yellow || !orange || !cutoff) {
+      errEl.textContent = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    var btn = document.getElementById("btnSaveSettings");
+    btn.disabled = true;
+    btn.textContent = "กำลังบันทึก...";
+    sb.rpc("do_set_settings", {
+      p_office_lat: lat, p_office_lng: lng,
+      p_green_before: green + ":00", p_yellow_before: yellow + ":00",
+      p_orange_before: orange + ":00", p_absent_cutoff_time: cutoff + ":00"
+    }).then(function(res){
+      btn.disabled = false;
+      btn.textContent = "บันทึกการตั้งค่า";
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        var msgMap = {
+          invalid_coordinates: "พิกัด GPS ไม่ถูกต้อง",
+          invalid_time_order: "เวลาต้องเรียงจากน้อยไปมาก (ดีเยี่ยม < ทันพอดี < มาเลท)",
+          missing_field: "กรุณากรอกข้อมูลให้ครบ",
+          not_supervisor: "ไม่มีสิทธิ์แก้ไข"
+        };
+        errEl.textContent = "บันทึกไม่สำเร็จ: " + (msgMap[code] || code);
+        errEl.classList.remove("hidden");
+        return;
+      }
+      successEl.classList.remove("hidden");
+    });
+  });
+
+  // ================= จัดการบัญชีหัวหน้า PIN ด้วยกันเอง (เฉพาะชวนชัย, auth-only) =================
+  function renderSupervisorsMgmt(rows){
+    var wrap = document.getElementById("supervisorsWrap");
+    var sups = (rows || []).filter(function(o){ return o.is_supervisor && o.login_method === "pin"; });
+    if (sups.length === 0) {
+      wrap.innerHTML = '<div class="center">ยังไม่มีบัญชีหัวหน้า PIN</div>';
+      return;
+    }
+    var html = '<table><thead><tr><th>ชื่อ</th><th>ชื่อเล่น</th><th>PIN</th><th>สถานะ</th><th></th></tr></thead><tbody>';
+    sups.forEach(function(o){
+      var enabled = o.supervisor_enabled !== false;
+      html += '<tr>' +
+        '<td>' + escapeHtml(o.full_name) + '</td>' +
+        '<td>' + escapeHtml(o.nickname || "-") + '</td>' +
+        '<td>' + (o.needs_pin_setup ? '<span class="pin-missing">ยังไม่ตั้ง</span>' : '<span class="pin-ok">ตั้งแล้ว</span>') + '</td>' +
+        '<td>' + (enabled ? "ใช้งานอยู่" : '<span class="muted">ปิดใช้งาน</span>') + '</td>' +
+        '<td><button class="btn-' + (enabled ? "danger-small" : "row-action") + '" data-sup-toggle="' + o.id + '" data-enable="' + (!enabled) + '">' + (enabled ? "ปิดใช้งาน" : "เปิดใช้งาน") + '</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll("button[data-sup-toggle]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-sup-toggle");
+        var enable = btn.getAttribute("data-enable") === "true";
+        var row = btn.closest("tr");
+        var name = row ? row.children[0].textContent : "";
+        var actionLabel = enable ? "เปิดใช้งาน" : "ปิดใช้งาน";
+        if (!confirm(actionLabel + ' บัญชีหัวหน้า "' + name + '" ใช่หรือไม่?')) return;
+        btn.disabled = true;
+        sb.rpc("do_set_supervisor_status", { p_target_officer_id: id, p_enabled: enable }).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            var msgMap = {
+              cannot_modify_auth_supervisor: "แก้ไขบัญชีอีเมลไม่ได้",
+              cannot_modify_self: "แก้ไขบัญชีตัวเองไม่ได้",
+              officer_not_found: "ไม่พบบัญชีนี้",
+              not_supervisor: "ไม่มีสิทธิ์"
+            };
+            alert(actionLabel + "ไม่สำเร็จ: " + (msgMap[code] || code));
+            btn.disabled = false;
+            return;
+          }
+          sb.rpc("do_list_officers_admin").then(function(r2){
+            if (!r2.error) { renderOfficersTable(r2.data); renderSupervisorsMgmt(r2.data); }
+          });
+        });
+      });
+    });
+  }
+
+  document.getElementById("btnAddSupervisor").addEventListener("click", function(){
+    var errEl = document.getElementById("newSupError");
+    var successEl = document.getElementById("newSupSuccess");
+    errEl.classList.add("hidden");
+    successEl.classList.add("hidden");
+    var fullName = document.getElementById("newSupFullName").value.trim();
+    var rankTitle = document.getElementById("newSupRankTitle").value.trim();
+    var nickname = document.getElementById("newSupNickname").value.trim();
+    if (!fullName) {
+      errEl.textContent = "กรุณากรอกชื่อ-นามสกุล";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    var btn = document.getElementById("btnAddSupervisor");
+    btn.disabled = true;
+    btn.textContent = "กำลังเพิ่ม...";
+    sb.rpc("do_add_supervisor", { p_full_name: fullName, p_rank_title: rankTitle || null, p_nickname: nickname || null }).then(function(res){
+      btn.disabled = false;
+      btn.textContent = "เพิ่มบัญชีหัวหน้าใหม่";
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        var msgMap = { name_required: "กรุณากรอกชื่อ-นามสกุล", not_supervisor: "ไม่มีสิทธิ์" };
+        errEl.textContent = "เพิ่มไม่สำเร็จ: " + (msgMap[code] || code);
+        errEl.classList.remove("hidden");
+        return;
+      }
+      document.getElementById("newSupFullName").value = "";
+      document.getElementById("newSupRankTitle").value = "";
+      document.getElementById("newSupNickname").value = "";
+      successEl.classList.remove("hidden");
+      sb.rpc("do_list_officers_admin").then(function(r2){
+        if (!r2.error) { renderOfficersTable(r2.data); renderSupervisorsMgmt(r2.data); }
+      });
+    });
+  });
+
+  // ================= เริ่มต้น: เช็ก session เดิม (เผื่อรีเฟรชหน้า) =================
+  sb.auth.getSession().then(function(res){
+    if (res.data && res.data.session) {
+      checkSupervisorThenLoad();
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>เช็กอินเช้า | ตม.จว.ระยอง</title>
+<style>
+  :root{
+    --green:#16a34a; --yellow:#ca8a04; --orange:#ea580c; --red:#dc2626; --purple:#7c3aed; --brown:#78350f;
+    --blue:#2563eb; --bg:#f3f4f6; --card:#ffffff; --text:#111827; --muted:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,"Segoe UI",Roboto,"Sarabun",sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    display:flex; align-items:flex-start; justify-content:center; padding:16px;
+  }
+  #app{width:100%; max-width:440px; margin-top:12px;}
+  .card{
+    background:var(--card); border-radius:16px; padding:24px 20px;
+    box-shadow:0 1px 3px rgba(0,0,0,.1); margin-bottom:16px;
+  }
+  h1{font-size:20px; margin:0 0 4px;}
+  .sub{color:var(--muted); font-size:14px; margin:0 0 20px;}
+  label{display:block; font-size:14px; font-weight:600; margin:16px 0 6px;}
+  select, input[type=text], input[type=password], textarea{
+    width:100%; padding:12px 14px; font-size:16px; border:1px solid #d1d5db;
+    border-radius:10px; background:#fff; color:var(--text);
+  }
+  textarea{resize:vertical; min-height:60px; font-family:inherit;}
+  .remark-box textarea{min-height:150px;}
+  button{
+    width:100%; padding:14px; font-size:16px; font-weight:700; border:none;
+    border-radius:12px; cursor:pointer; margin-top:16px;
+  }
+  .btn-primary{background:var(--blue); color:#fff;}
+  .btn-primary:disabled{background:#93c5fd; cursor:not-allowed;}
+  .btn-secondary{background:#e5e7eb; color:var(--text);}
+  .btn-danger{background:var(--red); color:#fff;}
+  .hidden{display:none !important;}
+  video{width:100%; border-radius:12px; background:#000;}
+  video.mirror{transform:scaleX(-1);}
+  canvas{display:none;}
+  #photoPreview{width:100%; border-radius:12px; margin-bottom:8px;}
+  .hint{font-size:13px; color:var(--muted); margin-top:8px; line-height:1.5;}
+  .badge{
+    display:inline-block; padding:10px 22px; border-radius:999px; color:#fff;
+    font-weight:800; font-size:18px; margin-bottom:12px;
+  }
+  .badge.green{background:var(--green);} .badge.yellow{background:var(--yellow);} .badge.orange{background:var(--orange);} .badge.red{background:var(--red);}
+  .badge.purple{background:var(--purple);}
+  .badge-row{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal-box{background:#fff; border-radius:16px; padding:24px 20px; max-width:400px; width:100%;}
+  .modal-box h2{margin:0 0 12px; font-size:18px;}
+  .modal-msg{font-size:14px; line-height:1.6; color:var(--text); margin-bottom:4px;}
+  .result-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:15px;}
+  .result-row span:first-child{color:var(--muted);}
+  .error-box{background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px 14px; border-radius:10px; font-size:14px; margin-top:12px;}
+  .warning-box{background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:12px 14px; border-radius:10px; font-size:14px; margin-top:12px; text-align:left;}
+  .radio-group{margin-top:8px;}
+  .radio-option{display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid #d1d5db; border-radius:10px; margin-bottom:8px; cursor:pointer; font-size:15px;}
+  .radio-option input{width:18px; height:18px; flex-shrink:0;}
+  .radio-option.checked{border-color:var(--blue); background:#eff6ff;}
+  .char-count{font-size:12px; color:var(--muted); text-align:right; margin-top:4px;}
+  .char-count.ok{color:var(--green);}
+  .center{text-align:center;}
+  .spinner{border:3px solid #e5e7eb; border-top-color:var(--blue); border-radius:50%; width:28px; height:28px; animation:spin 0.8s linear infinite; margin:20px auto;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* กล่องม็อตโต้ + สถิติส่วนตัว (แสดงหลังเช็กอินเสร็จ) */
+  .motto-box{
+    margin-top:22px; padding:20px 18px; border-radius:16px;
+    background:linear-gradient(135deg,#1d4ed8,#1e3a8a); color:#fff;
+    text-align:center; box-shadow:0 6px 16px rgba(29,78,216,.32);
+  }
+  .motto-label{font-size:12px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; opacity:.85; margin-bottom:8px;}
+  .motto-text{font-size:19px; font-weight:800; line-height:1.55; word-break:break-word;}
+
+  .stats-box{
+    margin-top:16px; padding:20px 18px; border-radius:16px;
+    background:#ecfdf5; border:1px solid #a7f3d0;
+  }
+  .stats-title{font-size:15px; font-weight:800; color:#065f46; text-align:center;}
+  .stats-sub{font-size:12px; color:#047857; text-align:center; margin-bottom:14px;}
+  .stats-row{display:flex; align-items:center; justify-content:space-between; padding:8px 2px; font-size:15px; color:#111827; border-bottom:1px solid #d1fae5;}
+  .stats-row:last-of-type{border-bottom:none;}
+  .stats-row .lbl{font-weight:700;}
+  .stats-row .count{font-weight:800; color:#065f46;}
+  .stats-divider{border-top:1px dashed #6ee7b7; margin:10px 0 4px; padding-top:10px;}
+  .stats-flag-row{display:flex; align-items:center; justify-content:space-between; padding:6px 2px; font-size:13px; color:#6d28d9; font-style:italic;}
+  .stats-flag-row .count{font-weight:800; font-style:normal;}
+  .stats-flag-row.brown{color:var(--brown);}
+  .stats-total{margin-top:12px; padding-top:12px; border-top:1px solid #a7f3d0; display:flex; justify-content:space-between; font-size:13px; color:#065f46; font-weight:700;}
+
+  /* กล่องหมายเหตุเพิ่มเติมหลังเช็กอิน (ไม่บังคับ, write-once) */
+  .remark-box{
+    margin-top:16px; padding:20px 18px; border-radius:16px;
+    background:#fff; border:1px solid #d1d5db; text-align:left;
+  }
+  .remark-title{font-size:15px; font-weight:800; color:#111827; margin-bottom:4px;}
+  .remark-sub{font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.5;}
+  .remark-saved-label{font-size:12px; color:var(--green); font-weight:700; margin-bottom:6px;}
+  .remark-saved-text{background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:12px 14px; font-size:14px; color:#374151; white-space:pre-wrap; word-break:break-word;}
+  .remark-msg{font-size:13px; margin-top:8px;}
+  .remark-msg.err{color:#991b1b;}
+  .remark-msg.ok{color:var(--green);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 1) หน้าขอความยินยอมครั้งแรก -->
+  <section id="screen-consent" class="card hidden">
+    <h1>ระบบเช็กอินเช้าเจ้าหน้าที่</h1>
+    <p class="sub">ตม.จว.ระยอง</p>
+    <p style="font-size:14px; line-height:1.7;">
+      ก่อนใช้งาน โปรดทราบว่าระบบจะ<b>บันทึกรูปถ่าย พิกัด และเวลาเช็กอิน</b>ของคุณทุกครั้งที่กดเช็กอิน
+      และ<b>หัวหน้าสามารถเห็นข้อมูลนี้ได้</b> ข้อมูลใช้เพื่อการกำกับดูแลภายในหน่วยงานเท่านั้น
+      รูปถ่ายจะถูกเก็บเป็นความลับ (private) และเข้าถึงได้เฉพาะผู้มีสิทธิ์
+    </p>
+    <button class="btn-primary" id="btnAcceptConsent">ยอมรับและเริ่มใช้งาน</button>
+  </section>
+
+  <!-- 2) หน้าเลือกชื่อ + PIN -->
+  <section id="screen-login" class="card hidden">
+    <h1>เช็กอินเช้า</h1>
+    <p class="sub" id="loginSub">เลือกชื่อและใส่รหัส PIN ของคุณ</p>
+
+    <label for="officerSelect">ชื่อเจ้าหน้าที่</label>
+    <select id="officerSelect"><option value="">กำลังโหลดรายชื่อ...</option></select>
+
+    <div id="pinNormalGroup">
+      <label for="pinInput">รหัส PIN</label>
+      <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="••••">
+    </div>
+
+    <div id="pinSetupGroup" class="hidden">
+      <p class="hint" style="margin-top:12px;">ยังไม่เคยตั้งรหัส PIN — ตั้งครั้งแรกที่นี่ (ครั้งต่อไปใช้รหัสนี้เข้าระบบ)</p>
+      <label for="newPinInput">ตั้งรหัส PIN ของคุณ (ตัวเลข 4 หลักขึ้นไป)</label>
+      <input type="password" id="newPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="••••">
+      <label for="newPinConfirmInput">ยืนยัน PIN อีกครั้ง</label>
+      <input type="password" id="newPinConfirmInput" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="••••">
+    </div>
+
+    <div id="loginError" class="error-box hidden"></div>
+
+    <button class="btn-primary" id="btnStartCamera">เปิดกล้องเพื่อเช็กอิน</button>
+    <p class="hint">ลืมรหัส PIN? ให้หัวหน้ากด "รีเซ็ต PIN" ในแดชบอร์ด แล้วมาตั้งใหม่ได้ที่นี่</p>
+  </section>
+
+  <!-- 3) หน้ากล้องสด -->
+  <section id="screen-camera" class="card hidden">
+    <h1>ถ่ายรูปเช็กอิน</h1>
+    <p class="sub">จัดหน้าให้อยู่ในกรอบ แล้วกดถ่าย</p>
+    <video id="video" autoplay playsinline muted class="mirror"></video>
+    <canvas id="canvas"></canvas>
+    <button class="btn-primary" id="btnCapture">ถ่ายรูป</button>
+    <button class="btn-secondary" id="btnSwitchCamera">สลับกล้อง (หน้า/หลัง)</button>
+    <button class="btn-secondary" id="btnCancelCamera">ยกเลิก</button>
+    <p class="hint" id="geoHint">กำลังขอพิกัด GPS (ไม่บังคับ)...</p>
+  </section>
+
+  <!-- 4) หน้ายืนยันก่อนส่ง -->
+  <section id="screen-confirm" class="card hidden">
+    <h1>ตรวจสอบก่อนยืนยัน</h1>
+    <img id="photoPreview" alt="รูปที่ถ่าย">
+
+    <label>สถานะความพร้อมวันนี้ (บังคับเลือก)</label>
+    <div class="radio-group">
+      <label class="radio-option" id="readyOptionYes">
+        <input type="radio" name="readyStatus" value="1">
+        พร้อมปฏิบัติหน้าที่ ให้บริการประชาชน
+      </label>
+      <label class="radio-option" id="readyOptionNo">
+        <input type="radio" name="readyStatus" value="0">
+        ไม่พร้อมปฏิบัติหน้าที่
+      </label>
+    </div>
+
+    <label for="noteInput">หมายเหตุประจำวัน (บังคับ อย่างน้อย 5 ตัวอักษร)</label>
+    <textarea id="noteInput" placeholder="เช่น คนมารอเยอะ, ไฟดับ, เป้าหมายวันนี้, ไปราชการ ฯลฯ"></textarea>
+    <div id="noteCharCount" class="char-count">0 ตัวอักษร</div>
+
+    <div id="confirmError" class="error-box hidden"></div>
+    <button class="btn-primary" id="btnConfirmCheckin">ยืนยันเช็กอิน</button>
+    <button class="btn-secondary" id="btnRetake">ถ่ายใหม่</button>
+  </section>
+
+  <!-- กำลังส่งข้อมูล -->
+  <section id="screen-loading" class="card hidden center">
+    <div class="spinner"></div>
+    <p>กำลังบันทึกเช็กอิน...</p>
+  </section>
+
+  <!-- 5) หน้าผลลัพธ์ -->
+  <section id="screen-result" class="card hidden center">
+    <div class="badge-row">
+      <div id="resultBadge" class="badge">🟢 ดีเยี่ยม</div>
+      <div id="resultPurpleBadge" class="badge purple hidden">🟣 ไม่สมบูรณ์</div>
+    </div>
+    <div style="text-align:left; margin-top:8px;">
+      <div class="result-row"><span>ชื่อ</span><span id="resOfficer">-</span></div>
+      <div class="result-row"><span>เวลาที่ระบบบันทึก</span><span id="resTime">-</span></div>
+      <div class="result-row"><span>ระยะห่างที่ทำงาน</span><span id="resDistance">-</span></div>
+      <div class="result-row"><span>ความพร้อม</span><span id="resReady">-</span></div>
+    </div>
+    <div id="resGpsWarning" class="warning-box hidden">⚠️ คุณเช็กอินโดยไม่ได้เปิด/อนุญาต GPS — ระบบยังบันทึกเช็กอินให้ตามปกติ แต่หัวหน้าจะเห็นว่าไม่มีข้อมูลระยะห่าง</div>
+    <button class="btn-primary" id="btnDone">เสร็จสิ้น</button>
+
+    <div class="motto-box">
+      <div class="motto-label">📢 Rayong Immigration Service</div>
+      <div class="motto-text" id="resultMotto">กำลังโหลด...</div>
+    </div>
+
+    <div class="stats-box">
+      <div class="stats-title">📊 สถิติของคุณเดือนนี้</div>
+      <div class="stats-sub" id="resultStatsMonth">เห็นเฉพาะคุณคนเดียว</div>
+      <div class="stats-row"><span class="lbl">🟢 ดีเยี่ยม</span><span class="count" id="resultStatGreen">-</span></div>
+      <div class="stats-row"><span class="lbl">🟡 ทันพอดี</span><span class="count" id="resultStatYellow">-</span></div>
+      <div class="stats-row"><span class="lbl">🟠 มาเลท</span><span class="count" id="resultStatOrange">-</span></div>
+      <div class="stats-row"><span class="lbl">🔴 สาย</span><span class="count" id="resultStatRed">-</span></div>
+      <div class="stats-flag-row stats-divider"><span>🟣 เช็กอินไม่สมบูรณ์</span><span class="count" id="resultStatPurple">-</span></div>
+      <div class="stats-flag-row brown"><span>🟤 ขาดเช็กอิน</span><span class="count" id="resultStatAbsent">-</span></div>
+      <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="resultStatTotal">-</span></div>
+    </div>
+
+    <div class="remark-box">
+      <div class="remark-title">📝 อยากบอกอะไรหัวหน้าเพิ่มเติมไหม</div>
+      <div class="remark-sub">ไม่บังคับ เช่น 🕐 เลิกงานดึก/OT · 🎯 เป้าหมายวันนี้ · 📌 งานที่ได้รับมอบหมายเพิ่ม · 🤝 ทำเพื่อส่วนรวม · 💡 ปัญหา+ข้อเสนอแนะ · 👍 ชื่นชม/ขอบคุณ</div>
+      <textarea id="resultRemarkInput" maxlength="500" placeholder="เช่น เมื่อวานเคลียงานกลับ 2 ทุ่มค่ะ ได้ช่วยจัดแฟ้มเอกสารในห้องเก็บของส่วนรวมเพิ่มเติม เจอปลั๊กไฟลืมปิดเลยอยากเสนอให้ช่วยกันเช็คก่อนกลับ อยากเพิ่มเติมฟีเจอร์ หรือมีอะไรอยากชื่นชมเพื่อนร่วมงานก็บอกได้..."></textarea>
+      <div class="char-count" id="resultRemarkCharCount">0 / 500 ตัวอักษร</div>
+      <button class="btn-primary" id="btnSaveResultRemark">บันทึกหมายเหตุ</button>
+      <div id="resultRemarkMsg" class="remark-msg hidden"></div>
+      <div id="resultRemarkSaved" class="hidden">
+        <div class="remark-saved-label">✅ บันทึกแล้ว (แก้ไขไม่ได้)</div>
+        <div class="remark-saved-text" id="resultRemarkSavedText"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- เช็กอินซ้ำ -->
+  <section id="screen-already" class="card hidden center">
+    <div class="badge-row">
+      <div id="alreadyBadge" class="badge" style="background:#6b7280;">เช็กอินแล้ววันนี้</div>
+      <div id="alreadyPurpleBadge" class="badge purple hidden">🟣 ไม่สมบูรณ์</div>
+    </div>
+    <p>คุณได้เช็กอินไปแล้วสำหรับวันนี้ ไม่สามารถเช็กอินซ้ำได้</p>
+    <div id="alreadyDetail" style="text-align:left; margin-top:8px;" class="hidden">
+      <div class="result-row"><span>เวลาที่เช็กอินไว้</span><span id="alreadyTime">-</span></div>
+      <div class="result-row"><span>ระยะห่างที่ทำงาน</span><span id="alreadyDistance">-</span></div>
+      <div class="result-row"><span>ความพร้อม</span><span id="alreadyReady">-</span></div>
+      <div class="result-row"><span>หมายเหตุที่บันทึกไว้</span><span id="alreadyNote">-</span></div>
+    </div>
+    <div id="alreadyGpsWarning" class="warning-box hidden">⚠️ เช็กอินครั้งนั้นไม่ได้เปิด/อนุญาต GPS — ไม่มีข้อมูลระยะห่างให้หัวหน้าดู</div>
+    <button class="btn-primary" id="btnDoneAlready">ตกลง</button>
+
+    <div class="motto-box">
+      <div class="motto-label">📢 Rayong Immigration Service</div>
+      <div class="motto-text" id="alreadyMotto">กำลังโหลด...</div>
+    </div>
+
+    <div class="stats-box">
+      <div class="stats-title">📊 สถิติของคุณเดือนนี้</div>
+      <div class="stats-sub" id="alreadyStatsMonth">เห็นเฉพาะคุณคนเดียว</div>
+      <div class="stats-row"><span class="lbl">🟢 ดีเยี่ยม</span><span class="count" id="alreadyStatGreen">-</span></div>
+      <div class="stats-row"><span class="lbl">🟡 ทันพอดี</span><span class="count" id="alreadyStatYellow">-</span></div>
+      <div class="stats-row"><span class="lbl">🟠 มาเลท</span><span class="count" id="alreadyStatOrange">-</span></div>
+      <div class="stats-row"><span class="lbl">🔴 สาย</span><span class="count" id="alreadyStatRed">-</span></div>
+      <div class="stats-flag-row stats-divider"><span>🟣 เช็กอินไม่สมบูรณ์</span><span class="count" id="alreadyStatPurple">-</span></div>
+      <div class="stats-flag-row brown"><span>🟤 ขาดเช็กอิน</span><span class="count" id="alreadyStatAbsent">-</span></div>
+      <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="alreadyStatTotal">-</span></div>
+    </div>
+
+    <div class="remark-box">
+      <div class="remark-title">📝 อยากบอกอะไรหัวหน้าเพิ่มเติมไหม</div>
+      <div class="remark-sub">ไม่บังคับ เช่น 🕐 เลิกงานดึก/OT · 🎯 เป้าหมายวันนี้ · 📌 งานที่ได้รับมอบหมายเพิ่ม · 🤝 ทำเพื่อส่วนรวม · 💡 ปัญหา+ข้อเสนอแนะ · 👍 ชื่นชม/ขอบคุณ</div>
+      <textarea id="alreadyRemarkInput" maxlength="500" placeholder="เช่น เมื่อวานเคลียงานกลับ 2 ทุ่มค่ะ ได้ช่วยจัดแฟ้มเอกสารในห้องเก็บของส่วนรวมเพิ่มเติม เจอปลั๊กไฟลืมปิดเลยอยากเสนอให้ช่วยกันเช็คก่อนกลับ อยากเพิ่มเติมฟีเจอร์ หรือมีอะไรอยากชื่นชมเพื่อนร่วมงานก็บอกได้..."></textarea>
+      <div class="char-count" id="alreadyRemarkCharCount">0 / 500 ตัวอักษร</div>
+      <button class="btn-primary" id="btnSaveAlreadyRemark">บันทึกหมายเหตุ</button>
+      <div id="alreadyRemarkMsg" class="remark-msg hidden"></div>
+      <div id="alreadyRemarkSaved" class="hidden">
+        <div class="remark-saved-label">✅ บันทึกแล้ว (แก้ไขไม่ได้)</div>
+        <div class="remark-saved-text" id="alreadyRemarkSavedText"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- โมดัลยืนยันเช็กอินไม่สมบูรณ์ (สีม่วง) -->
+<div id="incompleteModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>🟣 ยืนยันเช็กอิน</h2>
+    <p id="incompleteModalMsg" class="modal-msg"></p>
+    <button class="btn-primary" id="btnConfirmIncomplete">ยืนยันเช็กอิน (บันทึกเป็นไม่สมบูรณ์)</button>
+    <button class="btn-secondary" id="btnCancelIncomplete">ยกเลิก กลับไปแก้ไข</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ==== ตั้งค่า Supabase (เฟส B: RayongImm-Service) ====
+  var SUPABASE_URL = "https://aamzsbuwfdyljdvwaifb.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_5LSUhgfmbb90ckwvNbJwgw_wR2z0ik_";
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  var CONSENT_KEY = "rayong_checkin_consent_v1";
+
+  // ==== element refs ====
+  var screens = {
+    consent: document.getElementById("screen-consent"),
+    login: document.getElementById("screen-login"),
+    camera: document.getElementById("screen-camera"),
+    confirm: document.getElementById("screen-confirm"),
+    loading: document.getElementById("screen-loading"),
+    result: document.getElementById("screen-result"),
+    already: document.getElementById("screen-already")
+  };
+  function showScreen(name){
+    Object.keys(screens).forEach(function(k){ screens[k].classList.add("hidden"); });
+    screens[name].classList.remove("hidden");
+  }
+
+  var officerSelect = document.getElementById("officerSelect");
+  var pinInput = document.getElementById("pinInput");
+  var pinNormalGroup = document.getElementById("pinNormalGroup");
+  var pinSetupGroup = document.getElementById("pinSetupGroup");
+  var newPinInput = document.getElementById("newPinInput");
+  var newPinConfirmInput = document.getElementById("newPinConfirmInput");
+  var loginError = document.getElementById("loginError");
+  var officersById = {}; // เก็บผลจาก do_list_officers ไว้เช็ก needs_pin_setup ตอนเลือกชื่อ
+  var video = document.getElementById("video");
+  var canvas = document.getElementById("canvas");
+  var geoHint = document.getElementById("geoHint");
+  var photoPreview = document.getElementById("photoPreview");
+  var noteInput = document.getElementById("noteInput");
+  var confirmError = document.getElementById("confirmError");
+  var noteCharCount = document.getElementById("noteCharCount");
+  var readyRadios = document.querySelectorAll('input[name="readyStatus"]');
+  var readyOptionYes = document.getElementById("readyOptionYes");
+  var readyOptionNo = document.getElementById("readyOptionNo");
+
+  // นับความยาวหมายเหตุแบบสด ๆ + ไฮไลต์ radio ที่เลือก
+  noteInput.addEventListener("input", function(){
+    var len = noteInput.value.trim().length;
+    noteCharCount.textContent = len + " ตัวอักษร (ต้องการอย่างน้อย 5 ตัวอักษร)";
+    noteCharCount.classList.toggle("ok", len >= 5);
+  });
+  readyRadios.forEach(function(r){
+    r.addEventListener("change", function(){
+      readyOptionYes.classList.toggle("checked", document.querySelector('input[name="readyStatus"][value="1"]').checked);
+      readyOptionNo.classList.toggle("checked", document.querySelector('input[name="readyStatus"][value="0"]').checked);
+    });
+  });
+  function getSelectedReady(){
+    var checked = document.querySelector('input[name="readyStatus"]:checked');
+    return checked ? checked.value === "1" : null; // null = ยังไม่ได้เลือก
+  }
+  function resetConfirmFields(){
+    readyRadios.forEach(function(r){ r.checked = false; });
+    readyOptionYes.classList.remove("checked");
+    readyOptionNo.classList.remove("checked");
+    noteInput.value = "";
+    noteCharCount.textContent = "0 ตัวอักษร";
+    noteCharCount.classList.remove("ok");
+  }
+
+  // ==== state ====
+  var mediaStream = null;
+  var capturedBlob = null;
+  var geoResult = null;      // {lat,lng} หรือ null — ไม่บล็อกการเช็กอินไม่ว่ากรณีใด
+  var geoRequested = false;
+  var currentFacingMode = "user"; // ผู้ใช้สลับได้ระหว่าง "user" (หน้า) กับ "environment" (หลัง)
+
+  // ================= 1) Consent =================
+  function initConsent(){
+    if (localStorage.getItem(CONSENT_KEY) === "1") {
+      afterConsent();
+    } else {
+      showScreen("consent");
+    }
+  }
+  document.getElementById("btnAcceptConsent").addEventListener("click", function(){
+    localStorage.setItem(CONSENT_KEY, "1");
+    afterConsent();
+  });
+  function afterConsent(){
+    showScreen("login");
+    loadOfficers();
+  }
+
+  // ================= 2) โหลดรายชื่อเจ้าหน้าที่ =================
+  function loadOfficers(){
+    sb.rpc("do_list_officers").then(function(res){
+      if (res.error) {
+        officerSelect.innerHTML = '<option value="">โหลดรายชื่อไม่สำเร็จ ลองรีเฟรชหน้า</option>';
+        return;
+      }
+      var rows = res.data || [];
+      if (rows.length === 0) {
+        officerSelect.innerHTML = '<option value="">ยังไม่มีรายชื่อเจ้าหน้าที่ในระบบ</option>';
+        return;
+      }
+      officersById = {};
+      rows.forEach(function(o){ officersById[o.id] = o; });
+      // ลำดับตามที่ RPC ส่งมา (sort_order ตามเอกสารต้นฉบับ) ไม่เรียงใหม่ฝั่ง client
+      // รูปแบบ: "ยศ ชื่อ นามสกุล (ชื่อเล่น)"
+      officerSelect.innerHTML = '<option value="">-- เลือกชื่อ --</option>' +
+        rows.map(function(o){
+          var label = (o.rank_title ? o.rank_title + " " : "") + o.full_name + (o.nickname ? " (" + o.nickname + ")" : "");
+          return '<option value="' + o.id + '">' + escapeHtml(label) + '</option>';
+        }).join("");
+      updatePinModeUI();
+    });
+  }
+
+  // สลับ UI ระหว่าง "กรอก PIN ปกติ" กับ "ตั้ง PIN ครั้งแรก" ตาม needs_pin_setup ของคนที่เลือก
+  function updatePinModeUI(){
+    var o = officersById[officerSelect.value];
+    var isSetup = !!(o && o.needs_pin_setup);
+    pinNormalGroup.classList.toggle("hidden", isSetup);
+    pinSetupGroup.classList.toggle("hidden", !isSetup);
+  }
+  officerSelect.addEventListener("change", updatePinModeUI);
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ================= 3) เปิดกล้องสด (getUserMedia เท่านั้น — ห้าม input file) =================
+  document.getElementById("btnStartCamera").addEventListener("click", function(){
+    loginError.classList.add("hidden");
+    var officerId = officerSelect.value;
+    if (!officerId) { showLoginError("กรุณาเลือกชื่อเจ้าหน้าที่"); return; }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showLoginError("อุปกรณ์นี้ไม่รองรับกล้อง หรือหน้านี้ไม่ได้เปิดผ่าน HTTPS");
+      return;
+    }
+
+    var o = officersById[officerId];
+    if (o && o.needs_pin_setup) {
+      // ================= โหมดตั้ง PIN ครั้งแรก =================
+      var newPin = newPinInput.value.trim();
+      var newPinConfirm = newPinConfirmInput.value.trim();
+      if (newPin.length < 4) { showLoginError("PIN ต้องมีอย่างน้อย 4 หลัก"); return; }
+      if (newPin !== newPinConfirm) { showLoginError("PIN ทั้งสองช่องไม่ตรงกัน กรุณากรอกใหม่"); return; }
+
+      sb.rpc("do_set_initial_pin", { p_officer_id: officerId, p_new_pin: newPin }).then(function(res){
+        if (res.error || !res.data || res.data.ok !== true) {
+          var code = res.data ? res.data.error : "unknown";
+          if (code === "pin_already_set") {
+            showLoginError("มีคนตั้ง PIN ให้ชื่อนี้ไปแล้ว กรุณากรอกรหัส PIN ปกติแทน");
+            loadOfficers(); // รีเฟรช flag ให้ตรงกับสถานะจริง
+          } else {
+            showLoginError("ตั้ง PIN ไม่สำเร็จ: " + code);
+          }
+          return;
+        }
+        pinInput.value = newPin; // ใช้ค่าเดียวกันต่อใน flow เช็กอินปกติ
+        proceedToCamera();
+      });
+      return;
+    }
+
+    // ================= โหมดกรอก PIN ปกติ =================
+    var pin = pinInput.value.trim();
+    if (!pin) { showLoginError("กรุณาใส่รหัส PIN"); return; }
+    proceedToCamera();
+  });
+
+  function proceedToCamera(){
+    openCamera(currentFacingMode)
+      .then(function(){
+        showScreen("camera");
+        requestGeoNonBlocking(); // ยิงขอ GPS แบบไม่บล็อก ระหว่างกล้องเปิดอยู่
+      })
+      .catch(function(err){
+        showLoginError("เปิดกล้องไม่สำเร็จ: กรุณาอนุญาตการเข้าถึงกล้อง แล้วลองใหม่ (" + err.message + ")");
+      });
+  }
+  function showLoginError(msg){
+    loginError.textContent = msg;
+    loginError.classList.remove("hidden");
+  }
+
+  // เปิดกล้องสด (getUserMedia เท่านั้น) โดยเลือกได้ทั้งกล้องหน้า (user) และกล้องหลัง (environment)
+  function openCamera(facingMode){
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode } }, audio: false })
+      .then(function(stream){
+        mediaStream = stream;
+        video.srcObject = stream;
+        currentFacingMode = facingMode;
+        video.classList.toggle("mirror", facingMode === "user"); // มิเรอร์เฉพาะกล้องหน้า ให้ดูเป็นธรรมชาติ
+      });
+  }
+
+  document.getElementById("btnSwitchCamera").addEventListener("click", function(){
+    var nextMode = currentFacingMode === "user" ? "environment" : "user";
+    stopCamera();
+    openCamera(nextMode).catch(function(err){
+      // ถ้าสลับไม่ได้ (เช่นอุปกรณ์มีกล้องเดียว) ให้เปิดโหมดเดิมกลับคืน
+      openCamera(currentFacingMode).catch(function(){});
+      geoHint.textContent = "สลับกล้องไม่สำเร็จ: " + err.message;
+    });
+  });
+
+  // ================= พิกัด GPS: บันทึกอย่างเดียว ไม่บล็อกการเช็กอิน =================
+  function requestGeoNonBlocking(){
+    if (geoRequested) return;
+    geoRequested = true;
+    if (!navigator.geolocation) {
+      geoHint.textContent = "อุปกรณ์นี้ไม่รองรับ GPS — เช็กอินได้ตามปกติ";
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        geoResult = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        geoHint.textContent = "ได้พิกัด GPS แล้ว";
+      },
+      function(){
+        geoResult = null;
+        geoHint.textContent = "ไม่ได้เปิด/อนุญาต GPS — ยังเช็กอินได้ตามปกติ";
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  }
+
+  function stopCamera(){
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(function(t){ t.stop(); });
+      mediaStream = null;
+    }
+  }
+
+  document.getElementById("btnCancelCamera").addEventListener("click", function(){
+    stopCamera();
+    showScreen("login");
+  });
+
+  // ================= 4) ถ่ายรูป: วาด video ลง canvas แล้วแปลงเป็น blob =================
+  document.getElementById("btnCapture").addEventListener("click", function(){
+    var w = video.videoWidth || 720;
+    var h = video.videoHeight || 960;
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, w, h);
+    canvas.toBlob(function(blob){
+      capturedBlob = blob;
+      photoPreview.src = URL.createObjectURL(blob);
+      stopCamera();
+      confirmError.classList.add("hidden");
+      showScreen("confirm");
+    }, "image/jpeg", 0.85);
+  });
+
+  document.getElementById("btnRetake").addEventListener("click", function(){
+    capturedBlob = null;
+    openCamera(currentFacingMode)
+      .then(function(){ showScreen("camera"); })
+      .catch(function(err){
+        showScreen("login");
+        showLoginError("เปิดกล้องไม่สำเร็จ: " + err.message);
+      });
+  });
+
+  // ================= 5) ยืนยันเช็กอิน: เช็กระยะทาง/GPS ก่อน -> (อาจเด้งยืนยันม่วง) -> upload รูป -> เรียก RPC do_check_in =================
+  var pendingSubmit = null; // {officerId, pin, note, ready} รอส่งจริงหลังผ่านเช็กม่วงแล้ว
+
+  document.getElementById("btnConfirmCheckin").addEventListener("click", function(){
+    if (!capturedBlob) { return; }
+    var officerId = officerSelect.value;
+    var pin = pinInput.value.trim();
+    var note = noteInput.value.trim();
+    var ready = getSelectedReady();
+
+    confirmError.classList.add("hidden");
+    if (ready === null) {
+      confirmError.textContent = "กรุณาเลือกสถานะความพร้อมก่อนยืนยันเช็กอิน";
+      confirmError.classList.remove("hidden");
+      return;
+    }
+    if (note.length < 5) {
+      confirmError.textContent = "กรุณากรอกหมายเหตุประจำวันอย่างน้อย 5 ตัวอักษร";
+      confirmError.classList.remove("hidden");
+      return;
+    }
+
+    pendingSubmit = { officerId: officerId, pin: pin, note: note, ready: ready };
+    checkIncompleteThenSubmit();
+  });
+
+  // เช็กก่อนว่าจะเข้าเงื่อนไข "เช็กอินไม่สมบูรณ์" (สีม่วง) ไหม — ไม่มี GPS หรือห่างเกิน 50 ม.
+  // เป็นแค่การเช็กล่วงหน้าเพื่อถามผู้ใช้เท่านั้น ค่าจริงที่บันทึกคำนวณซ้ำฝั่ง server อีกทีใน do_check_in เสมอ
+  function checkIncompleteThenSubmit(){
+    if (!geoResult) {
+      showIncompleteModal('คุณไม่ได้เปิด/อนุญาต GPS ระบบจะยังเช็กอินให้ตามปกติ แต่จะบันทึกเป็น "เช็กอินไม่สมบูรณ์" (สีม่วง) เนื่องจากไม่มีข้อมูลระยะห่างยืนยัน ยืนยันเช็กอินหรือไม่?');
+      return;
+    }
+    sb.rpc("do_check_distance", { p_lat: geoResult.lat, p_lng: geoResult.lng }).then(function(res){
+      var dist = (res.data && res.data.ok) ? res.data.distance_m : null;
+      if (dist !== null && dist > 50) {
+        showIncompleteModal('คุณกำลังเช็กอินห่างจากที่ทำงานประมาณ ' + dist + ' เมตร (เกิน 50 เมตร) ระบบจะยังเช็กอินให้ตามปกติ แต่จะบันทึกเป็น "เช็กอินไม่สมบูรณ์" (สีม่วง) ยืนยันเช็กอินหรือไม่?');
+      } else {
+        doSubmitCheckin();
+      }
+    }).catch(function(){
+      // เช็กระยะล่วงหน้าไม่สำเร็จ (เช่นเน็ตหลุด) ไม่บล็อกผู้ใช้ — ปล่อยให้ do_check_in ตัดสินสถานะม่วงเองตอนบันทึกจริง
+      doSubmitCheckin();
+    });
+  }
+
+  function showIncompleteModal(msg){
+    document.getElementById("incompleteModalMsg").textContent = msg;
+    document.getElementById("incompleteModal").classList.remove("hidden");
+  }
+  document.getElementById("btnCancelIncomplete").addEventListener("click", function(){
+    document.getElementById("incompleteModal").classList.add("hidden");
+    pendingSubmit = null;
+  });
+  document.getElementById("btnConfirmIncomplete").addEventListener("click", function(){
+    document.getElementById("incompleteModal").classList.add("hidden");
+    doSubmitCheckin();
+  });
+
+  function doSubmitCheckin(){
+    if (!pendingSubmit) return;
+    var officerId = pendingSubmit.officerId;
+    var pin = pendingSubmit.pin;
+    var note = pendingSubmit.note;
+    var ready = pendingSubmit.ready;
+    var lastReady = ready; // เก็บไว้แสดงผลหลังเช็กอินสำเร็จ (server ไม่ได้ส่งค่านี้กลับ)
+    pendingSubmit = null;
+    showScreen("loading");
+
+    var todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD สำหรับตั้งชื่อไฟล์เท่านั้น
+    var fileName = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+    var path = officerId + "/" + todayStr + "/" + fileName + ".jpg";
+
+    sb.storage.from("checkin-photos").upload(path, capturedBlob, { contentType: "image/jpeg" })
+      .then(function(uploadRes){
+        if (uploadRes.error) {
+          showScreen("confirm");
+          confirmError.textContent = "อัปโหลดรูปไม่สำเร็จ: " + uploadRes.error.message + " กรุณาลองใหม่";
+          confirmError.classList.remove("hidden");
+          return null;
+        }
+        var lat = geoResult ? geoResult.lat : null;
+        var lng = geoResult ? geoResult.lng : null;
+        return sb.rpc("do_check_in", {
+          p_officer_id: officerId,
+          p_pin: pin,
+          p_photo_path: path,
+          p_lat: lat,
+          p_lng: lng,
+          p_note: note,
+          p_ready: ready
+        });
+      })
+      .then(function(rpcRes){
+        if (!rpcRes) return; // upload ล้มเหลวไปแล้ว จบตรงนี้
+        if (rpcRes.error) {
+          showScreen("confirm");
+          confirmError.textContent = "เช็กอินไม่สำเร็จ: " + rpcRes.error.message;
+          confirmError.classList.remove("hidden");
+          return;
+        }
+        var data = rpcRes.data;
+        if (!data || data.ok !== true) {
+          handleCheckinError(data);
+          return;
+        }
+        data.ready = lastReady;
+        data.officerId = officerId;
+        data.pin = pin;
+        showResult(data);
+      })
+      .catch(function(err){
+        showScreen("confirm");
+        confirmError.textContent = "เกิดข้อผิดพลาด: " + err.message;
+        confirmError.classList.remove("hidden");
+      });
+  }
+
+  function handleCheckinError(data){
+    var code = data ? data.error : "unknown";
+    if (code === "already_checked_in") {
+      showAlreadyCheckedIn();
+      return;
+    }
+    // note_too_short / ready_required ไม่ควรเกิดเพราะเช็กฝั่ง client ไปแล้ว แต่กันไว้เผื่อ server เข้มกว่า
+    if (code === "note_too_short" || code === "ready_required") {
+      showScreen("confirm");
+      confirmError.textContent = (code === "note_too_short")
+        ? "หมายเหตุต้องมีอย่างน้อย 5 ตัวอักษร"
+        : "กรุณาเลือกสถานะความพร้อมก่อนยืนยันเช็กอิน";
+      confirmError.classList.remove("hidden");
+      return;
+    }
+    showScreen("login");
+    if (code === "bad_pin") showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
+    else if (code === "officer_not_found") showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน");
+    else showLoginError("เช็กอินไม่สำเร็จ: " + code);
+  }
+
+  // เช็กอินซ้ำ: ดึงสถานะที่บันทึกไว้ของวันนี้มาแสดงไฟจราจรจริง แทนข้อความเฉยๆ
+  function showAlreadyCheckedIn(){
+    showScreen("already");
+    var officerId = officerSelect.value;
+    var pin = pinInput.value.trim();
+    var badge = document.getElementById("alreadyBadge");
+    var detail = document.getElementById("alreadyDetail");
+    badge.className = "badge";
+    badge.style.background = "#6b7280";
+    badge.textContent = "เช็กอินแล้ววันนี้";
+    detail.classList.add("hidden");
+    document.getElementById("alreadyGpsWarning").classList.add("hidden");
+    document.getElementById("alreadyPurpleBadge").classList.add("hidden");
+
+    remarkState.already = { officerId: officerId, pin: pin };
+    resetRemarkBox("already"); // ค่าเริ่มต้น เผื่อดึงสถานะไม่สำเร็จ — จะถูกแทนที่ด้วยของจริงถ้ามีหมายเหตุอยู่แล้วด้านล่าง
+
+    sb.rpc("do_get_today_status", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) return; // ถ้าดึงไม่ได้ ก็ยังเห็นข้อความพื้นฐานเดิม
+      var data = res.data;
+      var statusMap = {
+        green:  { emoji: "🟢", text: "ดีเยี่ยม" },
+        yellow: { emoji: "🟡", text: "ทันพอดี" },
+        orange: { emoji: "🟠", text: "มาเลท" },
+        red:    { emoji: "🔴", text: "สาย" }
+      };
+      var s = statusMap[data.status] || { emoji: "⚪", text: data.status };
+      badge.className = "badge " + data.status;
+      badge.style.background = "";
+      badge.textContent = s.emoji + " " + s.text + " (เช็กอินไปแล้ว)";
+      document.getElementById("alreadyPurpleBadge").classList.toggle("hidden", !data.incomplete);
+
+      var t = new Date(data.time);
+      document.getElementById("alreadyTime").textContent = t.toLocaleString("th-TH", {
+        timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "medium"
+      });
+      var noGps2 = (data.distance_m === null || data.distance_m === undefined);
+      document.getElementById("alreadyDistance").textContent = noGps2 ? "ไม่ทราบ (ไม่ได้เปิด GPS)" : ("~" + data.distance_m + " เมตร");
+      document.getElementById("alreadyGpsWarning").classList.toggle("hidden", !noGps2);
+
+      document.getElementById("alreadyReady").textContent =
+        (data.ready_for_duty === null || data.ready_for_duty === undefined) ? "ไม่มีข้อมูล (เช็กอินก่อนมีฟีเจอร์นี้)"
+        : data.ready_for_duty ? "✅ พร้อมปฏิบัติหน้าที่" : "⚠️ ไม่พร้อมปฏิบัติหน้าที่";
+      document.getElementById("alreadyNote").textContent = data.note || "-";
+
+      if (data.remark) {
+        showRemarkSaved("already", data.remark);
+      }
+
+      detail.classList.remove("hidden");
+    });
+
+    loadMotto("alreadyMotto");
+    loadMyStats(officerId, pin, "already");
+  }
+
+  // ================= ม็อตโต้ + สถิติส่วนตัวรายเดือน (แสดงหลังเช็กอินเสร็จเท่านั้น) =================
+  function loadMotto(targetElId){
+    var el = document.getElementById(targetElId);
+    if (!el) return;
+    sb.rpc("do_get_motto").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) { el.textContent = "—"; return; }
+      el.textContent = res.data.motto;
+    }).catch(function(){ el.textContent = "—"; });
+  }
+
+  var THAI_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+    "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+  // prefix = "result" หรือ "already" — เห็นเฉพาะเจ้าของ (ต้องยืนยัน PIN ซ้ำในตัว RPC เองเสมอ)
+  function loadMyStats(officerId, pin, prefix){
+    var now = new Date();
+    var monthLabelEl = document.getElementById(prefix + "StatsMonth");
+    if (monthLabelEl) {
+      monthLabelEl.textContent = "เห็นเฉพาะคุณคนเดียว — เดือน" + THAI_MONTHS[now.getMonth()] + " " + (now.getFullYear() + 543);
+    }
+    sb.rpc("do_get_my_month_stats", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) return;
+      var d = res.data;
+      document.getElementById(prefix + "StatGreen").textContent = d.green + " ครั้ง";
+      document.getElementById(prefix + "StatYellow").textContent = d.yellow + " ครั้ง";
+      document.getElementById(prefix + "StatOrange").textContent = d.orange + " ครั้ง";
+      document.getElementById(prefix + "StatRed").textContent = d.red + " ครั้ง";
+      document.getElementById(prefix + "StatPurple").textContent = d.incomplete + " ครั้ง";
+      var absentEl = document.getElementById(prefix + "StatAbsent");
+      if (absentEl) absentEl.textContent = (d.absent || 0) + " ครั้ง";
+      document.getElementById(prefix + "StatTotal").textContent = d.total + " ครั้ง";
+      // ถ้าแอดมินตั้งวันเริ่มนับของเดือนนี้ไว้ไม่ใช่วันที่ 1 ให้โชว์วงเล็บกำกับต่อท้ายป้ายเดือน
+      if (monthLabelEl && d.count_start_date) {
+        var parts = String(d.count_start_date).split("-");
+        var csYear = parseInt(parts[0], 10), csMonth = parseInt(parts[1], 10), csDay = parseInt(parts[2], 10);
+        if (csDay && csDay !== 1) {
+          monthLabelEl.textContent += " (เริ่มนับวันที่ " + csDay + " " + THAI_MONTHS[csMonth - 1] + " " + (csYear + 543) + ")";
+        }
+      }
+    });
+  }
+
+  // ================= หมายเหตุเพิ่มเติมหลังเช็กอิน (ไม่บังคับ, write-once) =================
+  var remarkState = {
+    result:  { officerId: null, pin: null },
+    already: { officerId: null, pin: null }
+  };
+
+  function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  ["result", "already"].forEach(function(prefix){
+    var ta = document.getElementById(prefix + "RemarkInput");
+    ta.addEventListener("input", function(){
+      document.getElementById(prefix + "RemarkCharCount").textContent = ta.value.length + " / 500 ตัวอักษร";
+    });
+  });
+
+  document.getElementById("btnSaveResultRemark").addEventListener("click", function(){ submitRemark("result"); });
+  document.getElementById("btnSaveAlreadyRemark").addEventListener("click", function(){ submitRemark("already"); });
+
+  function submitRemark(prefix){
+    var textarea = document.getElementById(prefix + "RemarkInput");
+    var remark = textarea.value.trim();
+    var msgEl = document.getElementById(prefix + "RemarkMsg");
+    msgEl.classList.add("hidden");
+
+    if (!remark) {
+      msgEl.textContent = "กรุณาพิมพ์ข้อความก่อนบันทึก (หรือข้ามได้เลยถ้าไม่มีอะไรจะบอก)";
+      msgEl.className = "remark-msg err";
+      msgEl.classList.remove("hidden");
+      return;
+    }
+
+    var st = remarkState[prefix];
+    var btn = document.getElementById("btnSave" + capitalize(prefix) + "Remark");
+    btn.disabled = true;
+
+    sb.rpc("do_save_remark", { p_officer_id: st.officerId, p_pin: st.pin, p_remark: remark }).then(function(res){
+      btn.disabled = false;
+      if (res.error || !res.data) {
+        msgEl.textContent = "บันทึกไม่สำเร็จ กรุณาลองใหม่";
+        msgEl.className = "remark-msg err";
+        msgEl.classList.remove("hidden");
+        return;
+      }
+      var d = res.data;
+      if (d.ok === true) {
+        showRemarkSaved(prefix, d.remark);
+      } else if (d.error === "already_saved") {
+        showRemarkSaved(prefix, d.remark);
+      } else {
+        var errMap = {
+          remark_too_long: "ข้อความยาวเกินไป (ไม่เกิน 500 ตัวอักษร)",
+          no_checkin_today: "ไม่พบข้อมูลเช็กอินวันนี้",
+          bad_pin: "รหัส PIN ไม่ถูกต้อง",
+          empty_remark: "กรุณาพิมพ์ข้อความก่อนบันทึก"
+        };
+        msgEl.textContent = errMap[d.error] || ("บันทึกไม่สำเร็จ: " + d.error);
+        msgEl.className = "remark-msg err";
+        msgEl.classList.remove("hidden");
+      }
+    }).catch(function(){
+      btn.disabled = false;
+      msgEl.textContent = "เกิดข้อผิดพลาด กรุณาลองใหม่";
+      msgEl.className = "remark-msg err";
+      msgEl.classList.remove("hidden");
+    });
+  }
+
+  function showRemarkSaved(prefix, text){
+    document.getElementById(prefix + "RemarkInput").classList.add("hidden");
+    document.getElementById(prefix + "RemarkCharCount").classList.add("hidden");
+    document.getElementById("btnSave" + capitalize(prefix) + "Remark").classList.add("hidden");
+    document.getElementById(prefix + "RemarkMsg").classList.add("hidden");
+    document.getElementById(prefix + "RemarkSavedText").textContent = text;
+    document.getElementById(prefix + "RemarkSaved").classList.remove("hidden");
+  }
+
+  function resetRemarkBox(prefix){
+    var ta = document.getElementById(prefix + "RemarkInput");
+    ta.value = "";
+    ta.classList.remove("hidden");
+    document.getElementById(prefix + "RemarkCharCount").textContent = "0 / 500 ตัวอักษร";
+    document.getElementById(prefix + "RemarkCharCount").classList.remove("hidden");
+    var btn = document.getElementById("btnSave" + capitalize(prefix) + "Remark");
+    btn.classList.remove("hidden");
+    btn.disabled = false;
+    document.getElementById(prefix + "RemarkMsg").classList.add("hidden");
+    document.getElementById(prefix + "RemarkSaved").classList.add("hidden");
+  }
+
+  // ================= 6) แสดงผลลัพธ์ไฟจราจร (ใช้เวลาจาก server เท่านั้น) =================
+  function showResult(data){
+    var badge = document.getElementById("resultBadge");
+    var statusMap = {
+      green:  { emoji: "🟢", text: "ดีเยี่ยม" },
+      yellow: { emoji: "🟡", text: "ทันพอดี" },
+      orange: { emoji: "🟠", text: "มาเลท" },
+      red:    { emoji: "🔴", text: "สาย" }
+    };
+    var s = statusMap[data.status] || { emoji: "⚪", text: data.status };
+    badge.className = "badge " + data.status;
+    badge.textContent = s.emoji + " " + s.text;
+    document.getElementById("resultPurpleBadge").classList.toggle("hidden", !data.incomplete);
+
+    document.getElementById("resOfficer").textContent = officerSelect.options[officerSelect.selectedIndex].text;
+
+    // เวลา: ใช้ data.time ที่ RPC (server) ส่งกลับมาเท่านั้น ห้ามใช้ new Date() ของ client
+    var serverTime = new Date(data.time);
+    document.getElementById("resTime").textContent = serverTime.toLocaleString("th-TH", {
+      timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "medium"
+    });
+
+    var noGps = (data.distance_m === null || data.distance_m === undefined);
+    document.getElementById("resDistance").textContent = noGps ? "ไม่ทราบ (ไม่ได้เปิด GPS)" : ("~" + data.distance_m + " เมตร");
+    document.getElementById("resGpsWarning").classList.toggle("hidden", !noGps);
+
+    document.getElementById("resReady").textContent = data.ready ? "✅ พร้อมปฏิบัติหน้าที่" : "⚠️ ไม่พร้อมปฏิบัติหน้าที่";
+
+    showScreen("result");
+
+    loadMotto("resultMotto");
+    loadMyStats(data.officerId, data.pin, "result");
+
+    remarkState.result = { officerId: data.officerId, pin: data.pin };
+    resetRemarkBox("result"); // เพิ่งเช็กอินสำเร็จ ยังไม่เคยมีหมายเหตุของวันนี้แน่นอน
+  }
+
+  function resetForm(){
+    pinInput.value = "";
+    newPinInput.value = "";
+    newPinConfirmInput.value = "";
+    resetConfirmFields();
+    capturedBlob = null;
+    geoResult = null;
+    geoRequested = false;
+    pendingSubmit = null;
+    document.getElementById("incompleteModal").classList.add("hidden");
+    showScreen("login");
+    loadOfficers(); // โหลดใหม่ทุกครั้ง เผื่อหัวหน้าเพิ่งกดรีเซ็ต PIN ให้ใครไป
+  }
+  document.getElementById("btnDone").addEventListener("click", resetForm);
+  document.getElementById("btnDoneAlready").addEventListener("click", resetForm);
+
+  // ==== start ====
+  initConsent();
+})();
+</script>
+</body>
+</html>
