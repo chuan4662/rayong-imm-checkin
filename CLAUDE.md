@@ -18,9 +18,11 @@
 
 **✅ (10 ก.ค. 2569) แก้ timeout สั้นเกินไปของ cron `delete-old-photos-daily` เสร็จแล้ว:** เพิ่ม `timeout_milliseconds := 60000` ใน `net.http_post` ของ cron job ผ่าน SQL Editor ตรง (migration `24_cron_timeout_fix.sql`) verify แล้ว jobid/schedule/active ไม่เปลี่ยน — ปิดประเด็นนี้สมบูรณ์ ไม่มีงานค้างจากบั๊กรูปกำพร้าเหลืออยู่เลย
 
+**✅✅ (10 ก.ค. 2569) P0.1 push ขึ้น git สำเร็จแล้วจริง (commit `37827bc`) + GPS timeout quick win push แยกอีก commit (`f58cd48`) — verify บนเว็บจริงผ่านหมด:** เจ้าของสร้าง fine-grained PAT เองแล้วส่งให้ใช้ครั้งเดียวตามขั้นตอนเดิม (ข้อ 23.4) ทั้งสอง commit deploy อัตโนมัติผ่าน Netlify และ verify ด้วย `fetch()` จริงบน `rayongimm.link` แล้วว่า `report.html` มีคอลัมน์ "สิทธิ์หัวหน้า"+`RETENTION_ERROR_MAP`, `dashboard.html` มี `RETENTION_ERROR_MAP`, และ `index.html` มี GPS `timeout: 20000` ครบทุกจุด — **⚠️ เจอบั๊กเชิงกระบวนการระหว่างรอบนี้ กันเจอซ้ำ ดูกติกาใหม่ข้อ 2.12:** ตอน sync ไฟล์เข้า `/tmp` git clone รอบแรก ลืมคัดลอก `index.html` (ที่แก้ GPS timeout ไปแล้วในโฟลเดอร์โปรเจกต์จริง) เข้าไปด้วย ทำให้ commit แรกไม่มีการเปลี่ยนแปลงของไฟล์นี้เลย ตรวจพบเพราะ verify บนเว็บจริงหลัง push แล้วเจอว่า `index.html` ไม่มี `timeout: 20000` ทั้งที่ commit ไปแล้ว จึงต้อง sync+commit+push แก้เพิ่มอีกรอบ (`f58cd48`) — **บทเรียน: ทุกครั้งก่อน `git add -A && git commit` ต้องเช็ก `git status --short` ในเซสชันนั้นเทียบกับ "รายการไฟล์ทั้งหมดที่แก้จริงในเซสชันนี้" (ไม่ใช่แค่ไฟล์ที่อยู่ในขอบเขตงานที่เพิ่งพูดถึง) และต้อง verify บนเว็บจริงหลัง push ทุกไฟล์ที่อ้างว่าแก้ไป ไม่ใช่แค่ไฟล์ที่จำได้ว่า sync ไปแล้ว**
+
 **✅ (10 ก.ค. 2569) P0.1 ตาม `90_ROADMAP_v2_PLAN.md` เสร็จสมบูรณ์แล้ว:** เพิ่มคอลัมน์ "สิทธิ์หัวหน้า" ใน `report.html` + แก้ error mapping ปุ่มกันลบรูปทั้ง `dashboard.html`/`report.html` ให้ครบทุก error code (ดูข้อ 25) เจ้าของ confirm push แล้ว
 
-อัปเดตล่าสุด: 10 กรกฎาคม 2569 (เช้า — ปิดงานบั๊กรูปกำพร้า + แก้ cron timeout + P0.1 เสร็จครบทั้งหมด ดูข้อ 24/24.1/25)
+อัปเดตล่าสุด: 10 กรกฎาคม 2569 (เช้า — ปิดงานบั๊กรูปกำพร้า + แก้ cron timeout + P0.1 เสร็จครบทั้งหมด + GPS timeout quick win push แล้ว ดูข้อ 24/24.1/25)
 
 **📌 มีแผนงานใหม่ที่ยืนยันดีไซน์แล้วแต่ตั้งใจ "ยังไม่เริ่มทำ" — ดูข้อ 22 ใน CLAUDE_ARCHIVE.md:** ระบบ badge ระดับทีมสำหรับกลุ่มงานธุรกิจ/ครอบครัว (2 คน/กลุ่ม ที่มักต้อง OT ดึกเป็นประจำ) ดีไซน์ยืนยันกับเจ้าของแล้ว 6 ก.ค. 2569 — **เจ้าของขอให้รอ ~2 สัปดาห์ก่อน (ราวๆ 20 ก.ค. 2569) ค่อยเริ่มเขียนโค้ด** ห้าม agent ตัวถัดไปเริ่มทำเองก่อนถึงกำหนดนี้เว้นแต่เจ้าของหยิบยกขึ้นมาเอง
 
@@ -74,10 +76,11 @@
 10. **⚠️ (ใหม่ 9 ก.ค. 2569) บั๊ก bash-mount staleness — ห้ามเชื่อ bash/shell เวลาอ่านไฟล์ในโฟลเดอร์นี้ (`Service Rayong Imm app`) เด็ดขาด ให้ใช้ `Read` tool เป็นความจริงหลักเสมอ** — เจอซ้ำหลายครั้ง (`cat`/`wc -l`/`python open()`/`dd` ทุกวิธีให้ผลค้างเก่าเหมือนกันหมด บางครั้ง staleness นี้ครอบคลุมถึง byte size/mtime ด้วย ไม่ใช่แค่เนื้อหา) แม้จะ `sleep` รอนานหรือลองหลายวิธีก็ไม่การันตีว่าจะได้ข้อมูลสด — Grep tool และ Read tool ดูเหมือนจะไม่ติดบั๊กนี้ (เชื่อถือได้กว่า raw bash) ถ้าต้อง syntax-check ไฟล์ด้วย `node --check` ให้คัดลอกเนื้อหาจาก `Read` tool ไปสร้างไฟล์ scratch **ชื่อใหม่ที่ไม่เคยใช้มาก่อน** ใน outputs ก่อนเสมอ (อย่าเขียนทับไฟล์ scratch เดิม เจอบั๊กเดียวกันซ้ำได้แม้เป็นไฟล์ที่เพิ่งสร้างเองในเซสชันเดียวกัน)
 11. **⚠️ (ใหม่ 10 ก.ค. 2569) ห้าม agent พยายามแก้ไข/deploy Edge Function ผ่านหน้า "Edge Functions" ใน Supabase Dashboard ด้วยเบราว์เซอร์ (Chrome/computer-use) อีกเด็ดขาด** — เซสชันก่อนหน้า (9 ก.ค. 2569) พยายาม deploy `edge_function_delete-old-photos.ts` เวอร์ชันใหม่ผ่านหน้านี้ด้วยเบราว์เซอร์ แล้วโดน safeguard ของระบบตัดเซสชันกลางคัน จนเจ้าของต้องเข้าไป deploy เองด้วยมือแทน (ยืนยันว่า deploy สำเร็จ + Verify JWT ยังปิดอยู่ตามที่ต้องการ) **บทเรียน:** งาน deploy/แก้ไขโค้ด Edge Function ผ่านเบราว์เซอร์มีความเสี่ยงโดน safeguard ตัดกลางคันสูง ควรให้เจ้าของทำเองเสมอ (agent เตรียมโค้ดให้พร้อม paste) แทนที่ agent จะคุมเบราว์เซอร์ทำการ deploy เองทั้งหมด — ส่วนการ **ทดสอบ/verify** ฟังก์ชันหลัง deploy ยังทำได้ปกติผ่านหน้า **SQL Editor** (คนละหน้ากับ Edge Functions ไม่ติดข้อห้ามนี้) โดยเรียก `net.http_post` ตรงๆ พร้อม header `x-cron-secret` จาก `vault.decrypted_secrets` เหมือนวิธีทดสอบเดิมใน migration 23 (ตัวอย่างจริงดูข้อ 24.1)
     - **⚠️ ข้อควรระวังที่เจอจริงระหว่างทดสอบ (10 ก.ค. 2569):** `net.http_post` ค่า default timeout คือ 5 วินาที ซึ่ง**สั้นเกินไป**สำหรับ orphan sweep ใหม่ (ต้อง recursive-list ทุกไฟล์ในทุกโฟลเดอร์ officer/date) ทำให้ `net._http_response.timed_out = true` แม้ฟังก์ชันจะยังทำงานต่อจนเสร็จจริงฝั่ง server ก็ตาม (ยืนยันจากผลทดสอบจริงในข้อ 24.1) **ถ้าจะเรียกฟังก์ชันนี้ผ่าน SQL Editor เพื่อทดสอบ/monitor ในอนาคต ต้องระบุ `timeout_milliseconds := 60000` (หรือมากกว่า) ใน `net.http_post` เสมอ ไม่งั้นจะได้ `content`/`status_code` เป็น NULL ทั้งที่ฟังก์ชันทำงานถูกต้อง** — **✅ (10 ก.ค. 2569) แก้แล้ว:** อัปเดต `cron.schedule('delete-old-photos-daily', ...)` ให้ใส่ `timeout_milliseconds := 60000` ด้วยเช่นกัน (ดู migration `24_cron_timeout_fix.sql`) รันตรงผ่าน SQL Editor แล้ว verify ผ่าน — jobid=1 เดิม, schedule `'0 19 * * *'` เดิม, active=true, `has_timeout=true` ไม่มีงานค้างเรื่องนี้อีกต่อไป
+12. **⚠️ (ใหม่ 10 ก.ค. 2569) ก่อน `git add -A && git commit` ในขั้นตอน `/tmp` sync (ข้อ 23.4) ต้องเช็กให้ครบว่าคัดลอกไฟล์ที่แก้จริง "ทุกไฟล์" ในเซสชันนั้นแล้ว ไม่ใช่แค่ไฟล์ในขอบเขตงานที่กำลังพูดถึง** — เจอจริง 10 ก.ค. 2569: แก้ GPS timeout ใน `index.html` เสร็จไปแล้วแยกจากงาน P0.1 (คนละไฟล์ คนละบทสนทนาย่อย) พอถึงขั้น sync เข้า git clone ลืมคัดลอก `index.html` ไปด้วย ทำให้ commit แรกไม่มีการเปลี่ยนแปลงไฟล์นี้เลยทั้งที่บอกผู้ใช้ว่าทำแล้ว ต้อง push แก้เพิ่มอีกรอบ วิธีป้องกัน: ก่อน commit ให้ไล่ทวนรายการไฟล์ที่แก้จริงทั้งหมดในเซสชัน (ไม่ใช่แค่ที่เกี่ยวกับ task ล่าสุด) แล้ว **verify บนเว็บจริงหลัง push ทุกไฟล์ที่อ้างว่าแก้ไปเสมอ** (ใช้ `fetch()` เช็ก marker string ของแต่ละไฟล์ อย่าเชื่อว่า sync ไปแล้วเพราะจำได้)
 
 ---
 
-## 3. โครงสร้างฐานข้อมูล — ไฟล์ migration ทั้งหมด (รันตามลำดับ 01→23)
+## 3. โครงสร้างฐานข้อมูล — ไฟล์ migration ทั้งหมด (รันตามลำดับ 01→24)
 
 ไฟล์อยู่ในโฟลเดอร์นี้ (ทั้งหมดรันจริงบน Supabase SQL Editor แล้ว):
 
@@ -107,6 +110,8 @@
 | `22_admin_settings_supervisor_mgmt.sql` | **ตั้งค่าระบบผ่าน UI + จัดการบัญชีหัวหน้า PIN (เฉพาะชวนชัย)** — `do_get_settings`/`do_set_settings`, `do_add_supervisor`/`do_set_supervisor_status` + คอลัมน์ `officer.supervisor_enabled` |
 | `23_photo_retention.sql` | **PDPA auto photo-deletion (ลบรูปเซลฟี่อัตโนมัติ 31 วัน + retention hold)** — เพิ่ม `check_in.retention_hold`/`check_in.photo_deleted_at`, RPC `do_set_retention_hold`/`do_supervisor_set_retention_hold`, ติดตั้ง `pg_cron`+`pg_net`, deploy Edge Function `delete-old-photos` |
 | `24_cron_timeout_fix.sql` | **แก้ timeout สั้นเกินไปของ cron `delete-old-photos-daily`** — เรียก `cron.schedule()` ซ้ำด้วยชื่อ/schedule เดิม (jobid=1 ไม่เปลี่ยน) เพิ่ม `timeout_milliseconds := 60000` ใน `net.http_post` (เดิมใช้ default 5 วิ ซึ่งสั้นเกินไปสำหรับ orphan sweep ที่ต้อง recursive-list ทั้งบัคเก็ต — ดูข้อ 24.1/2.11) |
+
+**⚠️ หมายเหตุเลข migration ถัดไป:** `90_ROADMAP_v2_PLAN.md` เดิมกำหนดให้ P0.3 (PIN rate limiting) ใช้เลข 24 — แต่เลขนี้ถูกใช้ไปแล้วกับ cron timeout fix ด้านบน ดังนั้น migration ถัดไปจริงคือ **25** (ไม่ใช่ 24 ตามที่ roadmap เขียนไว้เดิม) ให้เลื่อนเลขที่เหลือทั้งหมดในแผนตามไปด้วย (P0.3=25, P1.1=26, P2.2=27, P2.3=28, P3.1=29)
 
 **ตารางหลัก:** `settings` (แถวเดียว), `officer` (19 เจ้าหน้าที่ + 3 หัวหน้า, `active=false` สำหรับหัวหน้าเพื่อไม่ให้โผล่ในดรอปดาวน์เช็กอิน), `check_in`
 
@@ -152,12 +157,19 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 7. **Supabase SQL Editor: คลิก "View full cell content" ที่ผลลัพธ์ query แล้วโฟกัสหลุดจาก editor** — หลังรัน query แล้วคลิกดูค่าเต็มในผลลัพธ์ ถ้า `ctrl+a` แล้วพิมพ์ทับต่อทันทีโดยไม่คลิกกลับเข้า editor ก่อน ข้อความจะไม่ถูกพิมพ์เข้า editor จริง กด Run ซ้ำจะรันคำสั่งเดิมอีกรอบโดยไม่รู้ตัว วิธีป้องกัน: คลิกเข้าไปใน editor area ก่อนเสมอ แล้ว screenshot/get_page_text ยืนยันเนื้อหาที่พิมพ์จริงก่อนกด Run ทุกครั้งที่เพิ่งคลิกดูผลลัพธ์มา
 8. **รูปเช็กอินกำพร้าใน Storage (เจอ 9 ก.ค. 2569)** — `index.html` อัปโหลดรูปขึ้น Storage bucket ก่อนเรียก RPC `do_check_in` เสมอ ถ้า RPC ตอบ error (เช่นเช็กอินซ้ำ/PIN ผิด) รูปที่เพิ่งอัปโหลดไปจะไม่มีแถว `check_in.photo_path` อ้างอิงเลย ค้างอยู่ใน bucket ถาวรเพราะ Edge Function `delete-old-photos` เดิมลบตามแถว `check_in` เท่านั้น มองไม่เห็นไฟล์กำพร้า — แก้แล้ว 2 จุด (เช็ก `do_get_today_status` ก่อนอัปโหลดรูป + เพิ่ม orphan sweep ใน Edge Function) ดูรายละเอียดเต็มในข้อ 24
 9. **⚠️ (9 ก.ค. 2569) บั๊ก bash-mount staleness** — ดูข้อ 2.10 ด้านบน (ยกระดับเป็นกติกาถาวรแล้ว เพราะเจอซ้ำแทบทุกเซสชันตั้งแต่ข้อ 6.5)
+10. **⚠️ (10 ก.ค. 2569) ลืม sync ไฟล์ที่แก้ไปแล้วเข้า git clone ก่อน commit** — ดูข้อ 2.12 ด้านบน (ยกระดับเป็นกติกาถาวรแล้ว)
 
 ---
 
 ## 7. งานที่ยังไม่ทำ / รอ (backlog รวมจากทุกเซสชัน — เรียงตามที่เจ้าของพูดถึงล่าสุดก่อน)
 
-**ปิดงานแล้ว (10 ก.ค. 2569):** บั๊ก "รูปเช็กอินกำพร้าใน Storage" — push, deploy, และ E2E test ผ่านหมดแล้ว ดูข้อ 24 | P0.1 (คอลัมน์สิทธิ์หัวหน้าใน report.html + error mapping ปุ่มกันลบรูป 2 ไฟล์) — push แล้ว ดูข้อ 25
+**ปิดงานแล้ว (10 ก.ค. 2569):** บั๊ก "รูปเช็กอินกำพร้าใน Storage" — push, deploy, และ E2E test ผ่านหมดแล้ว ดูข้อ 24 | P0.1 (คอลัมน์สิทธิ์หัวหน้าใน report.html + error mapping ปุ่มกันลบรูป 2 ไฟล์) — push แล้ว ดูข้อ 25 | GPS geolocation timeout ใน `index.html` (8 วิ → 20 วิ, ลดม่วงฟรีจากกด geolocation timeout ก่อนเวลา) — push แล้ว (commit `f58cd48`), verify บนเว็บจริงผ่าน
+
+**📋 (10 ก.ค. 2569) แผน UX เพิ่มเติมที่เจ้าของให้มา + จัดลำดับความสำคัญไว้แล้ว (ยังไม่ได้ทำ ยกเว้น GPS timeout ด้านบน):**
+- หน้าเช็กอิน: แสดงสถานะ GPS ในหน้า "ตรวจสอบก่อนยืนยัน" (ไม่ใช่แค่ตอน modal ม่วงเด้ง) + จำชื่อล่าสุดใน localStorage เป็นค่า default + ปุ่มลัดหมายเหตุ "ปฏิบัติงานปกติ" — ต้นทุนต่ำ ผลกระทบสูง แนะนำทำก่อน
+- Dashboard: เมนูลอย/จัดกลุ่มการ์ดเป็น "ประจำวัน / รายงาน / ตั้งค่า" (ตอนนี้มี 11 การ์ดหน้าเดียว scroll ยาว) — ต้นทุนต่ำ (CSS/anchor link ล้วน)
+- Report.html: table 9-10 คอลัมน์อ่านยากบนมือถือแนวตั้ง — ระยะสั้นแนะนำหัวหน้าใช้แนวนอน/คอมก่อน ระยะยาวค่อยทำ card layout (งานใหญ่กว่า ไม่รีบ)
+- ลำดับเต็มรวมกับ roadmap เดิม (P0.3 PIN rate limit, P0.4 backup, P1 badge ทีม ฯลฯ) อยู่ในบทสนทนาที่ปรึกษากับเจ้าของ 10 ก.ค. 2569 — สรุป: ทำ backup (ฟรี, ไม่มีเหตุผลเลื่อน) และ PIN rate limit ก่อนเริ่ม P1 badge (เพิ่ม attack surface ถ้าไม่ปิดช่องโหว่ก่อน), ส่วน P1 badge คงกำหนดเดิม ~20 ก.ค. ห้ามเริ่มก่อน
 
 **แผนใหม่ที่ยืนยันดีไซน์แล้ว แต่ตั้งใจรอก่อน (บันทึก 6 ก.ค. 2569 — รายละเอียดเต็มใน `CLAUDE_ARCHIVE.md` ข้อ 22):**
 - **Badge ระดับทีมสำหรับกลุ่มงานธุรกิจ/ครอบครัว** (ทีมละ 2 คนที่มัก OT ดึก) — ดีไซน์ยืนยันแล้ว (badge แยกระดับทีม ไม่แตะสีรายคน) แต่เจ้าของขอให้รอ **~2 สัปดาห์ (ราวๆ 20 ก.ค. 2569)** ค่อยเริ่มเขียนโค้ด — **ห้าม agent เริ่มทำเองก่อนถึงกำหนด**
@@ -167,7 +179,7 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 - **เฟส D ตาม spec เดิม**: ให้ใช้งานจริงต่อเนื่อง 1 เดือนก่อน แล้วค่อยตัดสินใจเรื่องระบบให้คะแนน/รางวัลจากข้อมูลจริง — **ห้ามเพิ่มฟีเจอร์นี้ก่อนถึงเวลา**
 - ฟีดแบ็กประชาชน + QR เคาน์เตอร์ — ต้องรออนุมัติเป็นลายลักษณ์อักษรจากผู้บังคับบัญชาก่อน ตามสเปกเดิม
 - คู่มือผู้ใช้ (ข้อ 8) — ยังไม่ได้อัปเดตให้ครบทุกฟีเจอร์ใหม่ตั้งแต่ข้อ 14 เป็นต้นมา (เจ้าของอัปเดตเองเป็นหลัก ไม่ต้องหยิบยกเว้นแต่เจ้าของถามเอง — ดูข้อ 8)
-- P0.3, P0.4 และ P1–P3 อื่นๆ ใน `90_ROADMAP_v2_PLAN.md` ยังไม่เริ่มทำ (นอกเหนือจาก P0.1/P0.2 ที่เสร็จแล้ว)
+- P0.3, P0.4 และ P1–P3 อื่นๆ ใน `90_ROADMAP_v2_PLAN.md` ยังไม่เริ่มทำ (นอกเหนือจาก P0.1/P0.2 ที่เสร็จแล้ว) — ดูหมายเหตุเลข migration ที่เลื่อนแล้วในข้อ 3
 - Branch deploy / deploy preview ของ Netlify — มีให้ใช้ได้แล้วในทางเทคนิคเพราะผูก git แล้ว แต่โปรเจกต์นี้ตัดสินใจ push ตรงไป `main` เหมือนเดิมไปก่อน ไม่ใช้ PR flow
 
 ---
@@ -187,12 +199,12 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 ### 23.1 สิ่งที่สร้าง/ตั้งค่าใหม่
 
 - **GitHub repo:** `chuan4662/rayong-imm-checkin` — สร้างเป็น Private ก่อน แล้วเปลี่ยนเป็น **Public** ภายหลัง (เหตุผลดูข้อ 23.3)
-- **Fine-grained Personal Access Token:** scope เฉพาะ repo นี้ repo เดียว, หมดอายุ 90 วัน, สิทธิ์แค่ "Contents: Read and write" + "Metadata: Read-only" (ขั้นต่ำที่จำเป็น ไม่ให้สิทธิ์เกินความจำเป็น) — ใช้แค่ตอน push ครั้งแรก ไม่ได้บันทึกไว้ที่ไหนในไฟล์โปรเจกต์
+- **Fine-grained Personal Access Token:** scope เฉพาะ repo นี้ repo เดียว, หมดอายุสั้น, สิทธิ์แค่ "Contents: Read and write" + "Metadata: Read-only" (ขั้นต่ำที่จำเป็น ไม่ให้สิทธิ์เกินความจำเป็น) — ใช้แค่ตอน push แล้วแนะนำให้เจ้าของ revoke/delete ทิ้งหลังใช้เสร็จทุกครั้ง ไม่ได้บันทึกไว้ที่ไหนในไฟล์โปรเจกต์เลย (เจ้าของเป็นคนสร้าง+ส่งให้ agent ใช้ครั้งเดียวตามกติกาความปลอดภัย ข้อ 2 ด้านบน — agent ไม่มีสิทธิ์สร้าง credential ให้ตัวเอง)
 - **โครงสร้าง repo ใหม่** (จัดใหม่จากที่กองอยู่ในโฟลเดอร์เดียวกันหมด — ใช้เฉพาะใน git working copy ที่ `/tmp` เท่านั้น โฟลเดอร์โปรเจกต์จริงบน OneDrive ยังคงแบนราบเหมือนเดิม):
   ```
   index.html, dashboard.html, report.html   (อยู่ root เหมือนเดิม — Netlify publish directory ว่าง/root)
   CLAUDE.md, CLAUDE_ARCHIVE.md, README.md, .gitignore   (root)
-  migrations/01_*.sql ... 23_*.sql           (ย้ายเข้าโฟลเดอร์ย่อย)
+  migrations/01_*.sql ... 24_*.sql           (ย้ายเข้าโฟลเดอร์ย่อย)
   edge-functions/edge_function_delete-old-photos.ts
   docs/00_SPEC_v1_ORIGINAL.md, 90_ROADMAP_v2_PLAN.md, คู่มือการใช้งาน...txt
   ```
@@ -219,11 +231,12 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 
 เพราะ git รันตรงในโฟลเดอร์โปรเจกต์ไม่ได้ (ข้อ 23.2) ทุกครั้งที่จะ push การเปลี่ยนแปลงใหม่ ต้อง:
 
-1. sync ไฟล์ปัจจุบันจากโฟลเดอร์โปรเจกต์จริง (`Service Rayong Imm app`) ไปที่ working copy ใน `/tmp` (เช่น `/tmp/rayong-imm-checkin-git`) — ถ้า working copy นี้ไม่มีอยู่แล้วในเซสชันปัจจุบัน ต้อง `git clone` จาก GitHub มาใหม่ก่อน (repo เป็น public แล้ว clone ได้โดยไม่ต้องใช้ token) แล้วค่อยคัดลอกไฟล์ปัจจุบันทับ **⚠️ ห้ามใช้ `rsync` ทั้งโฟลเดอร์ตรงๆ** เพราะโฟลเดอร์จริงเป็นไฟล์แบนราบ (SQL/docs/edge function อยู่ root ปนกันหมด) แต่ git working copy จัดเป็นโฟลเดอร์ย่อย (`migrations/`, `edge-functions/`, `docs/`) ตามข้อ 23.1 — ต้องคัดลอกทีละไฟล์ไปยัง path ที่ถูกต้องในโครงสร้างใหม่ และ **ต้องอ่านเนื้อหาไฟล์ผ่าน `Read` tool เสมอ ไม่ใช่ bash `cp`/`cat`** (ดูบั๊ก bash-mount staleness ในข้อ 2.10 — ไฟล์ในโฟลเดอร์จริงอาจดูค้าง/ตัดจบกลางบรรทัดถ้าอ่านผ่าน bash ตรงๆ)
+1. sync ไฟล์ปัจจุบันจากโฟลเดอร์โปรเจกต์จริง (`Service Rayong Imm app`) ไปที่ working copy ใน `/tmp` (เช่น `/tmp/rayong-imm-checkin-git`) — ถ้า working copy นี้ไม่มีอยู่แล้วในเซสชันปัจจุบัน ต้อง `git clone` จาก GitHub มาใหม่ก่อน (repo เป็น public แล้ว clone ได้โดยไม่ต้องใช้ token) แล้วค่อยคัดลอกไฟล์ปัจจุบันทับ **⚠️ ห้ามใช้ `rsync` ทั้งโฟลเดอร์ตรงๆ** เพราะโฟลเดอร์จริงเป็นไฟล์แบนราบ (SQL/docs/edge function อยู่ root ปนกันหมด) แต่ git working copy จัดเป็นโฟลเดอร์ย่อย (`migrations/`, `edge-functions/`, `docs/`) ตามข้อ 23.1 — ต้องคัดลอกทีละไฟล์ไปยัง path ที่ถูกต้องในโครงสร้างใหม่ และ **ต้องอ่านเนื้อหาไฟล์ผ่าน `Read` tool เสมอ ไม่ใช่ bash `cp`/`cat`** (ดูบั๊ก bash-mount staleness ในข้อ 2.10 — ไฟล์ในโฟลเดอร์จริงอาจดูค้าง/ตัดจบกลางบรรทัดถ้าอ่านผ่าน bash ตรงๆ) **⚠️ ต้องไล่ทวนรายการไฟล์ที่แก้จริงทั้งหมดในเซสชันก่อน sync ทุกครั้ง (ข้อ 2.12) — ไม่ใช่แค่ไฟล์ในขอบเขต task ล่าสุดที่กำลังคุยอยู่**
 2. `git add -A && git commit -m "..."` ใน `/tmp/rayong-imm-checkin-git`
-3. `git push origin main`
+3. `git push` ไปยัง `https://<username>:<token>@github.com/chuan4662/rayong-imm-checkin.git main` (ใส่ token ตรงใน URL ของคำสั่ง push ครั้งเดียว **ไม่ใช้ `git remote set-url`** เพื่อไม่ให้ token ค้างอยู่ใน `.git/config` ของ working copy)
 4. **ต้องขอ confirm จากเจ้าของก่อนขั้นตอนที่ 3 เสมอ** ตามกติกาข้อ 2.1 ที่แก้ใหม่ — สรุปว่าจะแก้อะไร ให้เจ้าของ `present_files` ดูไฟล์จากโฟลเดอร์โปรเจกต์จริงก่อน (ไม่ใช่จาก `/tmp`)
 5. โฟลเดอร์โปรเจกต์จริง (`Service Rayong Imm app`) ที่เจ้าของแก้ไฟล์เองอยู่เป็นปกติ **ไม่ถูกแตะต้องจากขั้นตอน git เลย** — เจ้าของทำงานเหมือนเดิมทุกประการ ไม่ต้องเปลี่ยนพฤติกรรม
+6. **หลัง push ทุกครั้ง ต้อง verify บนเว็บจริง (`fetch()` เช็ก marker string เฉพาะของแต่ละไฟล์ที่แก้) ก่อนสรุปว่าเสร็จ** (ข้อ 2.12 — เคยพลาดเพราะลืม sync ไฟล์หนึ่งไปแล้วไม่ได้ verify จนผู้ใช้ไม่รู้)
 
 ### 23.5 ทดสอบแล้ว (verify ผ่านจริง)
 
@@ -240,7 +253,7 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 ### 23.7 เรื่องเครดิต/ต้นทุนที่ agent ตัวถัดไปต้องรู้
 
 - **GitHub ไม่มีระบบเครดิตแบบ Netlify** — repo public เก็บฟรีไม่จำกัดในทางปฏิบัติ ไม่ได้ใช้ GitHub Actions (Netlify เป็นคนรัน build ทั้งหมด) จึง push ได้ตามปกติไม่ต้องกังวลเรื่องต้นทุนฝั่ง GitHub เลย
-- **Netlify build credit ยังเป็นต้นทุนจริง** — เฉลี่ย ~15 เครดิต/ครั้งที่ push (คำนวณจาก 60 เครดิต / 4 deploys ในรอบทดสอบ) หลักการเดิมที่เคยใช้กับ Netlify Drop (สะสมงานแก้หลายจุดก่อนค่อย deploy รวมกัน) **ยังคงใช้ได้เหมือนเดิม แค่เปลี่ยนจาก "ก่อน deploy" เป็น "ก่อน push" เท่านั้น** — ดูกติกาข้อ 2.1
+- **Netlify build credit ยังเป็นต้นทุนจริง แต่ไม่ใช่คอขวดจริงในสเกลนี้** — เฉลี่ย ~15 เครดิต/ครั้งที่ push (คำนวณจาก 60 เครดิต / 4 deploys ในรอบทดสอบ) แพลน Free ให้ 300 เครดิต/เดือน ใช้จริงต่อเดือนแค่หลักสิบ เหลือเฟือมาก — **ต้นทุนที่ควรใช้ชั่งใจจริงคือแรงงาน/เวลาพัฒนาและความเสี่ยง regression ต่องาน ไม่ใช่เครดิต Netlify** หลักการเดิม (สะสมงานแก้หลายจุดก่อนค่อย push รวมกัน) ยังคงดีเพราะลดจำนวนรอบ verify ไม่ใช่เพราะประหยัดเครดิต — ดูกติกาข้อ 2.1
 
 ---
 
@@ -308,7 +321,7 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 
 ## 25. P0.1 งานเก็บตกเล็ก (ตาม `90_ROADMAP_v2_PLAN.md`) — ✅ เสร็จสมบูรณ์ (10 ก.ค. 2569)
 
-**สถานะ: เขียนโค้ดเสร็จ + verify syntax ผ่านทั้งคู่ + ส่งไฟล์ให้เจ้าของตรวจสอบแล้ว + เจ้าของ confirm แล้ว — frontend ล้วน ไม่มี migration ใหม่**
+**สถานะ: เขียนโค้ดเสร็จ + verify syntax ผ่านทั้งคู่ + ส่งไฟล์ให้เจ้าของตรวจสอบแล้ว + เจ้าของ confirm แล้ว + push ขึ้น git สำเร็จจริง (commit `37827bc`) + verify บนเว็บจริงผ่าน — frontend ล้วน ไม่มี migration ใหม่**
 
 **คำขอเดิม:** ทำ P0.1 ตาม roadmap — (1) เพิ่มคอลัมน์ "สิทธิ์หัวหน้า" ใน `report.html` ให้เท่ากับ `dashboard.html` (2) แก้ error-message mapping ของปุ่มกันลบรูป (`do_set_retention_hold`/`do_supervisor_set_retention_hold`) ทั้ง 2 ไฟล์ ให้แสดงข้อความไทยครบทุก error code ไม่โชว์โค้ดดิบ
 
@@ -327,4 +340,4 @@ URL: `https://aamzsbuwfdyljdvwaifb.supabase.co/functions/v1/supervisor-photo-url
 
 **Verify หลังแก้:** `node --check` ผ่านทั้ง 2 ไฟล์ (คัดลอกเนื้อหา `<script>` เต็มไปที่ไฟล์ scratch ตามกติกาข้อ 2.10) — ไม่มี syntax error
 
-**Push:** เจ้าของ confirm แล้ว 10 ก.ค. 2569 — push ผ่านขั้นตอน `/tmp`-based commit ตามข้อ 23.4
+**Push:** เจ้าของ confirm แล้ว 10 ก.ค. 2569 — เจ้าของสร้าง fine-grained PAT เอง (repo scope `rayong-imm-checkin`, Contents: Read/write) แล้วส่งให้ใช้ครั้งเดียว push สำเร็จจริง (commit `37827bc`) — verify บนเว็บจริงหลัง push ยืนยันคอลัมน์ "สิทธิ์หัวหน้า" + `RETENTION_ERROR_MAP` ปรากฏถูกต้องทั้ง `report.html`/`dashboard.html`
