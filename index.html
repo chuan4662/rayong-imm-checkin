@@ -639,53 +639,89 @@
     pendingSubmit = null;
     showScreen("loading");
 
-    var todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD สำหรับตั้งชื่อไฟล์เท่านั้น
-    var fileName = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
-    var path = officerId + "/" + todayStr + "/" + fileName + ".jpg";
+    // ⚠️ (9 ก.ค. 2569) เช็กสถานะก่อนอัปโหลดรูปเสมอ — กันบั๊ก "รูปกำพร้าใน Storage": เดิมอัปโหลดรูป
+    // ขึ้น bucket ก่อนเรียก do_check_in ตรงๆ ถ้า RPC ตอบ error (เช่น already_checked_in/bad_pin) รูป
+    // ที่เพิ่งอัปโหลดไปจะค้างอยู่ใน Storage ตลอดไปเพราะไม่มีแถว check_in.photo_path อ้างอิงถึงเลย
+    // (ดูรายละเอียดเต็มใน CLAUDE.md ข้อ 24) จึงเรียก do_get_today_status ตรวจ PIN + เช็กอินซ้ำก่อนเสมอ
+    // ถ้าเรียกไม่สำเร็จ (เช่นเน็ตหลุด) ปล่อยผ่านไปเช็กอินตามปกติ (fail-open) ไม่บล็อกผู้ใช้ เพราะการมา
+    // ทันเวลาสำคัญกว่า — do_check_in ฝั่ง server ยังเป็นผู้ตัดสินสุดท้ายที่แท้จริงอยู่ดี (double-submit
+    // race ที่หลุดผ่านมาถึงตรงนี้ได้ยังมี Edge Function orphan-sweep เป็นตาข่ายรองรับอีกชั้น)
+    sb.rpc("do_get_today_status", { p_officer_id: officerId, p_pin: pin }).then(function(precheckRes){
+      if (precheckRes.error || !precheckRes.data) {
+        proceedWithUploadAndCheckin();
+        return;
+      }
+      var pre = precheckRes.data;
+      if (pre.ok === true) {
+        // เช็กอินไปแล้ววันนี้จริง — ไม่ต้องอัปโหลดรูปซ้ำเลย
+        showAlreadyCheckedIn();
+        return;
+      }
+      if (pre.error === "bad_pin") {
+        showScreen("login");
+        showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
+        return;
+      }
+      if (pre.error === "officer_not_found") {
+        showScreen("login");
+        showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน");
+        return;
+      }
+      // pre.error === "not_checked_in" (เคสปกติ) หรือ error code อื่นที่ไม่รู้จัก — ปล่อยผ่านไปเช็กอินตามปกติ
+      proceedWithUploadAndCheckin();
+    }).catch(function(){
+      proceedWithUploadAndCheckin();
+    });
 
-    sb.storage.from("checkin-photos").upload(path, capturedBlob, { contentType: "image/jpeg" })
-      .then(function(uploadRes){
-        if (uploadRes.error) {
+    function proceedWithUploadAndCheckin(){
+      var todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD สำหรับตั้งชื่อไฟล์เท่านั้น
+      var fileName = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+      var path = officerId + "/" + todayStr + "/" + fileName + ".jpg";
+
+      sb.storage.from("checkin-photos").upload(path, capturedBlob, { contentType: "image/jpeg" })
+        .then(function(uploadRes){
+          if (uploadRes.error) {
+            showScreen("confirm");
+            confirmError.textContent = "อัปโหลดรูปไม่สำเร็จ: " + uploadRes.error.message + " กรุณาลองใหม่";
+            confirmError.classList.remove("hidden");
+            return null;
+          }
+          var lat = geoResult ? geoResult.lat : null;
+          var lng = geoResult ? geoResult.lng : null;
+          return sb.rpc("do_check_in", {
+            p_officer_id: officerId,
+            p_pin: pin,
+            p_photo_path: path,
+            p_lat: lat,
+            p_lng: lng,
+            p_note: note,
+            p_ready: ready
+          });
+        })
+        .then(function(rpcRes){
+          if (!rpcRes) return; // upload ล้มเหลวไปแล้ว จบตรงนี้
+          if (rpcRes.error) {
+            showScreen("confirm");
+            confirmError.textContent = "เช็กอินไม่สำเร็จ: " + rpcRes.error.message;
+            confirmError.classList.remove("hidden");
+            return;
+          }
+          var data = rpcRes.data;
+          if (!data || data.ok !== true) {
+            handleCheckinError(data);
+            return;
+          }
+          data.ready = lastReady;
+          data.officerId = officerId;
+          data.pin = pin;
+          showResult(data);
+        })
+        .catch(function(err){
           showScreen("confirm");
-          confirmError.textContent = "อัปโหลดรูปไม่สำเร็จ: " + uploadRes.error.message + " กรุณาลองใหม่";
+          confirmError.textContent = "เกิดข้อผิดพลาด: " + err.message;
           confirmError.classList.remove("hidden");
-          return null;
-        }
-        var lat = geoResult ? geoResult.lat : null;
-        var lng = geoResult ? geoResult.lng : null;
-        return sb.rpc("do_check_in", {
-          p_officer_id: officerId,
-          p_pin: pin,
-          p_photo_path: path,
-          p_lat: lat,
-          p_lng: lng,
-          p_note: note,
-          p_ready: ready
         });
-      })
-      .then(function(rpcRes){
-        if (!rpcRes) return; // upload ล้มเหลวไปแล้ว จบตรงนี้
-        if (rpcRes.error) {
-          showScreen("confirm");
-          confirmError.textContent = "เช็กอินไม่สำเร็จ: " + rpcRes.error.message;
-          confirmError.classList.remove("hidden");
-          return;
-        }
-        var data = rpcRes.data;
-        if (!data || data.ok !== true) {
-          handleCheckinError(data);
-          return;
-        }
-        data.ready = lastReady;
-        data.officerId = officerId;
-        data.pin = pin;
-        showResult(data);
-      })
-      .catch(function(err){
-        showScreen("confirm");
-        confirmError.textContent = "เกิดข้อผิดพลาด: " + err.message;
-        confirmError.classList.remove("hidden");
-      });
+    }
   }
 
   function handleCheckinError(data){
@@ -955,4 +991,3 @@
 </script>
 </body>
 </html>
-<!-- git+netlify auto-deploy test: 2026-07-08T15:18:50Z -->

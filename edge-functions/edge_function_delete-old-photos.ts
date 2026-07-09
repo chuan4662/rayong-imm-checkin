@@ -11,6 +11,15 @@
 // (ไม่ใช้ service role key เป็นตัวยืนยันสิทธิ์เรียก เพราะเสี่ยงถ้าหลุด — service role key ใช้แค่
 // ภายในฟังก์ชันเพื่อคุย Storage/DB เท่านั้น ซึ่ง Supabase inject เป็น env var ให้อัตโนมัติเสมอ
 // ไม่ต้องตั้งเอง เหมือนฟังก์ชัน supervisor-photo-url ที่มีอยู่แล้วในโปรเจกต์นี้)
+//
+// ⚠️ (9 ก.ค. 2569) เพิ่ม "orphan photo sweep" — บั๊กที่พบ: index.html อัปโหลดรูปขึ้น Storage ก่อน
+// เรียก do_check_in เสมอ ถ้า do_check_in ตอบ error (already_checked_in/bad_pin/officer_not_found/
+// note_too_short/ready_required) รูปที่เพิ่งอัปโหลดไปจะไม่มีแถว check_in.photo_path อ้างอิงถึงเลย —
+// ลอจิกลบรูปเดิมด้านบน (ตาม checked_in_at ของแถว check_in) มองไม่เห็นรูปพวกนี้เพราะมันไม่ผูกกับแถวใดๆ
+// เลยค้างอยู่ใน bucket ตลอดไป ส่วนนี้จึงสแกนทุกไฟล์ใน bucket แล้วเทียบกับ photo_path ที่มีอยู่จริงใน
+// check_in ทั้งหมด (ไม่กรอง retention_hold เพราะไฟล์กำพร้าไม่ผูกกับแถวไหนให้ hold ได้อยู่แล้ว) ไฟล์ที่ไม่มี
+// แถวอ้างอิงและอัปโหลดมาเกิน ORPHAN_GRACE_HOURS ชั่วโมงแล้ว ถือว่าเป็นรูปกำพร้าจริง (ให้ grace period กัน
+// ลบรูปที่เพิ่งอัปโหลดเสร็จแต่ do_check_in ยังไม่ทันตอบกลับ/อยู่ระหว่าง retry จริงๆ)
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -22,6 +31,33 @@ const corsHeaders = {
 
 const DEFAULT_RETENTION_DAYS = 31;
 const BUCKET = "checkin-photos";
+const ORPHAN_GRACE_HOURS = 24;
+
+// เดินลึกเข้าไปใน bucket ทีละชั้น (โครงสร้างจริงคือ {officerId}/{YYYY-MM-DD}/{uuid}.jpg — 2 ชั้นโฟลเดอร์
+// ก่อนถึงไฟล์) Supabase Storage list() คืนแค่ชั้นเดียวต่อครั้ง ต้องเรียกซ้ำแบบ recursive เอง
+// entry.id === null หมายถึงเป็น "โฟลเดอร์" (placeholder) ส่วน entry.id ที่มีค่าจริงหมายถึงไฟล์จริง
+async function listAllStorageObjects(
+  supabase: ReturnType<typeof createClient>,
+): Promise<{ path: string; created_at: string | null }[]> {
+  const result: { path: string; created_at: string | null }[] = [];
+
+  async function walk(prefix: string, depth: number) {
+    const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: 1000 });
+    if (error || !data) return;
+    for (const entry of data) {
+      const fullPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.id === null) {
+        // กันวนลูปไม่รู้จบถ้าโครงสร้างจริงลึกผิดคาด (ปกติลึกแค่ 2 ชั้น)
+        if (depth < 5) await walk(fullPath, depth + 1);
+      } else {
+        result.push({ path: fullPath, created_at: entry.created_at ?? null });
+      }
+    }
+  }
+
+  await walk("", 0);
+  return result;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -105,6 +141,56 @@ Deno.serve(async (req) => {
       }
     }
 
+    // =====================================================================
+    // ---- กวาดรูปกำพร้า (orphan sweep) — ดูคำอธิบายเต็มที่หัวไฟล์ ----
+    // สแกนทุกไฟล์จริงใน bucket แล้วเทียบกับ photo_path ที่มีแถว check_in อ้างอิงอยู่ทั้งหมด
+    // (ไม่กรองด้วย cutoff/retention_hold เหมือนลูปด้านบน เพราะไฟล์กำพร้าไม่ผูกกับแถวใดเลย)
+    // ไฟล์ที่ไม่มีใครอ้างอิง + อัปโหลดมาเกิน ORPHAN_GRACE_HOURS ชม.แล้ว ถือว่ากำพร้าจริง ลบได้ปลอดภัย
+    // =====================================================================
+    const orphanDeleted: string[] = [];
+    const orphanErrors: { path: string; error: string }[] = [];
+    let orphanScanned = 0;
+    let orphanSkippedGrace = 0;
+
+    try {
+      const allObjects = await listAllStorageObjects(supabase);
+      orphanScanned = allObjects.length;
+
+      const { data: refRows, error: refErr } = await supabase
+        .from("check_in")
+        .select("photo_path")
+        .not("photo_path", "is", null);
+
+      if (refErr) {
+        orphanErrors.push({ path: "*", error: "refs_read_failed: " + refErr.message });
+      } else {
+        const referenced = new Set((refRows ?? []).map((r: { photo_path: string }) => r.photo_path));
+        const graceThresholdMs = Date.now() - ORPHAN_GRACE_HOURS * 60 * 60 * 1000;
+
+        for (const obj of allObjects) {
+          if (referenced.has(obj.path)) continue;
+
+          // ไม่มี created_at (ไม่ควรเกิดขึ้นจริง) ให้ถือว่าเก่าพอที่จะลบได้ ปลอดภัยกว่าเก็บค้างไว้ตลอดไป
+          if (obj.created_at) {
+            const createdMs = new Date(obj.created_at).getTime();
+            if (createdMs > graceThresholdMs) {
+              orphanSkippedGrace++;
+              continue; // ยังไม่ครบ grace period — เผื่อ do_check_in กำลังจะตามมา
+            }
+          }
+
+          const { error: rmErr } = await supabase.storage.from(BUCKET).remove([obj.path]);
+          if (rmErr && !/not.?found/i.test(rmErr.message ?? "")) {
+            orphanErrors.push({ path: obj.path, error: rmErr.message });
+            continue;
+          }
+          orphanDeleted.push(obj.path);
+        }
+      }
+    } catch (e) {
+      orphanErrors.push({ path: "*", error: "orphan_sweep_unexpected: " + String(e) });
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -114,6 +200,14 @@ Deno.serve(async (req) => {
         deleted_count: deleted.length,
         deleted_ids: deleted,
         errors,
+        orphan_sweep: {
+          grace_hours: ORPHAN_GRACE_HOURS,
+          scanned: orphanScanned,
+          skipped_grace_period: orphanSkippedGrace,
+          deleted_count: orphanDeleted.length,
+          deleted_paths: orphanDeleted,
+          errors: orphanErrors,
+        },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
