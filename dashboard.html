@@ -604,6 +604,12 @@
   }
 
   // ================= ปุ่มกันลบรูป (retention hold) — ใช้ร่วมกันทั้งวันนี้/ประวัติ =================
+  var RETENTION_ERROR_MAP = {
+    not_supervisor: "ไม่มีสิทธิ์ทำรายการนี้",
+    officer_not_found: "ไม่พบสิทธิ์ผู้ใช้ หรือถูกปิดใช้งาน",
+    bad_pin: "รหัส PIN ไม่ถูกต้อง",
+    checkin_not_found: "ไม่พบรายการเช็กอินนี้"
+  };
   function attachRetentionButtons(wrap, reloadFn){
     wrap.querySelectorAll("button[data-retention]").forEach(function(btn){
       btn.addEventListener("click", function(){
@@ -616,8 +622,8 @@
         btn.textContent = "กำลังบันทึก...";
         sb.rpc("do_set_retention_hold", { p_check_in_id: id, p_hold: hold }).then(function(res){
           if (res.error || !res.data || res.data.ok !== true) {
-            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
-            alert("บันทึกไม่สำเร็จ: " + code);
+            var code = res.data ? res.data.error : null;
+            alert("บันทึกไม่สำเร็จ: " + (RETENTION_ERROR_MAP[code] || "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง"));
             btn.disabled = false;
             btn.textContent = hold ? "🔒 กันลบรูป" : "🔓 ปลดล็อกรูป";
             return;

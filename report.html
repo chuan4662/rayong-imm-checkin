@@ -627,6 +627,12 @@
   }
 
   // ================= ปุ่มกันลบรูป (retention hold) — ใช้ร่วมกันทั้งวันนี้/ประวัติ =================
+  var RETENTION_ERROR_MAP = {
+    not_supervisor: "ไม่มีสิทธิ์ทำรายการนี้",
+    officer_not_found: "ไม่พบสิทธิ์ผู้ใช้ หรือถูกปิดใช้งาน",
+    bad_pin: "รหัส PIN ไม่ถูกต้อง",
+    checkin_not_found: "ไม่พบรายการเช็กอินนี้"
+  };
   function attachRetentionButtons(wrap, reloadFn){
     wrap.querySelectorAll("button[data-retention]").forEach(function(btn){
       btn.addEventListener("click", function(){
@@ -639,8 +645,8 @@
         btn.textContent = "กำลังบันทึก...";
         sb.rpc("do_supervisor_set_retention_hold", { p_officer_id: session.officerId, p_pin: session.pin, p_check_in_id: id, p_hold: hold }).then(function(res){
           if (res.error || !res.data || res.data.ok !== true) {
-            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
-            alert("บันทึกไม่สำเร็จ: " + code);
+            var code = res.data ? res.data.error : null;
+            alert("บันทึกไม่สำเร็จ: " + (RETENTION_ERROR_MAP[code] || "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง"));
             btn.disabled = false;
             btn.textContent = hold ? "🔒 กันลบรูป" : "🔓 ปลดล็อกรูป";
             return;
@@ -905,7 +911,7 @@
       wrap.innerHTML = '<div class="center">ยังไม่มีรายชื่อ</div>';
       return;
     }
-    var html = '<table><thead><tr><th>ชื่อ</th><th>ชื่อเล่น</th><th>ตำแหน่ง</th><th>สถานะ</th><th>PIN</th><th>วิธีเข้าระบบ</th><th>วันทำงาน</th><th></th></tr></thead><tbody>';
+    var html = '<table><thead><tr><th>ชื่อ</th><th>ชื่อเล่น</th><th>ตำแหน่ง</th><th>สถานะ</th><th>PIN</th><th>วิธีเข้าระบบ</th><th>สิทธิ์หัวหน้า</th><th>วันทำงาน</th><th></th></tr></thead><tbody>';
     rows.forEach(function(o){
       var loginLabel = o.login_method === "auth" ? "Email" : "PIN";
       html += '<tr>' +
@@ -915,6 +921,7 @@
         '<td>' + (o.active ? "ใช้งาน" : '<span class="muted">ปิดใช้งาน</span>') + '</td>' +
         '<td>' + (o.needs_pin_setup ? '<span class="pin-missing">ยังไม่ตั้ง</span>' : '<span class="pin-ok">ตั้งแล้ว</span>') + '</td>' +
         '<td>' + loginLabel + '</td>' +
+        '<td>' + (o.is_supervisor ? "หัวหน้า" : "-") + '</td>' +
         '<td>' + escapeHtml(formatWorkDays(o.work_days)) + '</td>' +
         '<td style="white-space:nowrap;">' +
           ((o.needs_pin_setup || o.login_method === "auth") ? '' : '<button class="btn-danger-small" data-reset="' + o.id + '">รีเซ็ต PIN</button> ') +
