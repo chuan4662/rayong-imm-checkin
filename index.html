@@ -165,6 +165,7 @@
   <section id="screen-confirm" class="card hidden">
     <h1>ตรวจสอบก่อนยืนยัน</h1>
     <img id="photoPreview" alt="รูปที่ถ่าย">
+    <p class="hint" id="confirmGeoHint">กำลังตรวจสอบสถานะ GPS...</p>
 
     <label>สถานะความพร้อมวันนี้ (บังคับเลือก)</label>
     <div class="radio-group">
@@ -181,6 +182,7 @@
     <label for="noteInput">หมายเหตุประจำวัน (บังคับ อย่างน้อย 5 ตัวอักษร)</label>
     <textarea id="noteInput" placeholder="เช่น คนมารอเยอะ, ไฟดับ, เป้าหมายวันนี้, ไปราชการ ฯลฯ"></textarea>
     <div id="noteCharCount" class="char-count">0 ตัวอักษร</div>
+    <button type="button" class="btn-secondary" id="btnQuickNoteNormal">⚡ ปฏิบัติงานปกติ (กรอกให้อัตโนมัติ)</button>
 
     <div id="confirmError" class="error-box hidden"></div>
     <button class="btn-primary" id="btnConfirmCheckin">ยืนยันเช็กอิน</button>
@@ -309,6 +311,7 @@
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   var CONSENT_KEY = "rayong_checkin_consent_v1";
+  var LAST_OFFICER_KEY = "rayong_checkin_last_officer_v1";
 
   // ==== element refs ====
   var screens = {
@@ -336,6 +339,7 @@
   var video = document.getElementById("video");
   var canvas = document.getElementById("canvas");
   var geoHint = document.getElementById("geoHint");
+  var confirmGeoHint = document.getElementById("confirmGeoHint");
   var photoPreview = document.getElementById("photoPreview");
   var noteInput = document.getElementById("noteInput");
   var confirmError = document.getElementById("confirmError");
@@ -349,6 +353,11 @@
     var len = noteInput.value.trim().length;
     noteCharCount.textContent = len + " ตัวอักษร (ต้องการอย่างน้อย 5 ตัวอักษร)";
     noteCharCount.classList.toggle("ok", len >= 5);
+  });
+  // ปุ่มลัดหมายเหตุ "ปฏิบัติงานปกติ" — กรอกข้อความให้อัตโนมัติ ลดปัญหาคนรีบพิมพ์ขยะให้ครบ 5 ตัวอักษร
+  document.getElementById("btnQuickNoteNormal").addEventListener("click", function(){
+    noteInput.value = "ปฏิบัติงานปกติ";
+    noteInput.dispatchEvent(new Event("input"));
   });
   readyRadios.forEach(function(r){
     r.addEventListener("change", function(){
@@ -374,6 +383,7 @@
   var capturedBlob = null;
   var geoResult = null;      // {lat,lng} หรือ null — ไม่บล็อกการเช็กอินไม่ว่ากรณีใด
   var geoRequested = false;
+  var geoStatus = "pending"; // "pending" | "ok" | "denied" | "unsupported" — ใช้แสดงผลในหน้าตรวจสอบก่อนยืนยันด้วย
   var currentFacingMode = "user"; // ผู้ใช้สลับได้ระหว่าง "user" (หน้า) กับ "environment" (หลัง)
 
   // ================= 1) Consent =================
@@ -414,6 +424,11 @@
           var label = (o.rank_title ? o.rank_title + " " : "") + o.full_name + (o.nickname ? " (" + o.nickname + ")" : "");
           return '<option value="' + o.id + '">' + escapeHtml(label) + '</option>';
         }).join("");
+      // จำชื่อล่าสุดที่เลือกไว้ใน localStorage มาเป็นค่า default (ถ้าชื่อนั้นยังอยู่ในรายชื่อจริง)
+      var lastOfficerId = localStorage.getItem(LAST_OFFICER_KEY);
+      if (lastOfficerId && officersById[lastOfficerId]) {
+        officerSelect.value = lastOfficerId;
+      }
       updatePinModeUI();
     });
   }
@@ -426,6 +441,11 @@
     pinSetupGroup.classList.toggle("hidden", !isSetup);
   }
   officerSelect.addEventListener("change", updatePinModeUI);
+  officerSelect.addEventListener("change", function(){
+    if (officerSelect.value) {
+      localStorage.setItem(LAST_OFFICER_KEY, officerSelect.value);
+    }
+  });
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
@@ -511,21 +531,37 @@
   });
 
   // ================= พิกัด GPS: บันทึกอย่างเดียว ไม่บล็อกการเช็กอิน =================
+  // geoStatus ใช้แสดงผลทั้งในหน้ากล้อง (geoHint) และหน้าตรวจสอบก่อนยืนยัน (confirmGeoHint)
+  function geoStatusText(){
+    if (geoStatus === "ok") return "🟢 ได้พิกัด GPS แล้ว";
+    if (geoStatus === "denied") return "🔴 ไม่ได้เปิด/อนุญาต GPS — จะบันทึกเป็น \"เช็กอินไม่สมบูรณ์\" (สีม่วง)";
+    if (geoStatus === "unsupported") return "⚪ อุปกรณ์นี้ไม่รองรับ GPS — เช็กอินได้ตามปกติ";
+    return "🟡 กำลังขอพิกัด GPS...";
+  }
+  function refreshGeoHints(){
+    var text = geoStatusText();
+    if (geoHint) geoHint.textContent = text;
+    if (confirmGeoHint) confirmGeoHint.textContent = text;
+  }
   function requestGeoNonBlocking(){
     if (geoRequested) return;
     geoRequested = true;
     if (!navigator.geolocation) {
-      geoHint.textContent = "อุปกรณ์นี้ไม่รองรับ GPS — เช็กอินได้ตามปกติ";
+      geoStatus = "unsupported";
+      refreshGeoHints();
       return;
     }
+    refreshGeoHints(); // แสดง "กำลังขอพิกัด GPS..." ทันทีระหว่างรอผล
     navigator.geolocation.getCurrentPosition(
       function(pos){
         geoResult = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        geoHint.textContent = "ได้พิกัด GPS แล้ว";
+        geoStatus = "ok";
+        refreshGeoHints();
       },
       function(){
         geoResult = null;
-        geoHint.textContent = "ไม่ได้เปิด/อนุญาต GPS — ยังเช็กอินได้ตามปกติ";
+        geoStatus = "denied";
+        refreshGeoHints();
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
@@ -557,6 +593,7 @@
       stopCamera();
       confirmError.classList.add("hidden");
       showScreen("confirm");
+      refreshGeoHints(); // อัปเดตสถานะ GPS ให้ทันสถานะล่าสุดตอนเข้าหน้าตรวจสอบก่อนยืนยัน
     }, "image/jpeg", 0.85);
   });
 
@@ -977,6 +1014,7 @@
     capturedBlob = null;
     geoResult = null;
     geoRequested = false;
+    geoStatus = "pending";
     pendingSubmit = null;
     document.getElementById("incompleteModal").classList.add("hidden");
     showScreen("login");
