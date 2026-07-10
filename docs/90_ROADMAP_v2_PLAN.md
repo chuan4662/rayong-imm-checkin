@@ -4,6 +4,8 @@
 >
 > **สำหรับ agent ที่รับไปรัน:** อ่านคู่กับ `CLAUDE.md` (สถานะจริงปัจจุบัน) และ `00_SPEC_v1_ORIGINAL.md` (สเปกตั้งต้น) เสมอ — ถ้าเอกสารนี้ขัดกับสถานะจริงใน `CLAUDE.md` (เช่น มี migration ใหม่กว่าที่เอกสารนี้อ้าง) ให้ยึด `CLAUDE.md` แล้วปรับเลข migration ตามจริง เอกสารนี้กำหนด "จะทำอะไร ลำดับไหน ออกแบบอย่างไร" ไม่ใช่บันทึกสถานะ
 
+> **⚠️ (10 ก.ค. 2569) อัปเดตความคืบหน้า — P0.2 (git+CI) และ P0.1 (เก็บตกเล็ก) เสร็จแล้วทั้งคู่:** รายละเอียดเต็มอยู่ใน `CLAUDE.md` ข้อ 23 (P0.2) และข้อ 25 (P0.1) ตามลำดับ นอกจากนี้ยังมีงานเก็บตกเล็กเพิ่มเติมนอกแผนเดิม (cron timeout fix ใช้เลข migration 24 ไปแล้ว, GPS timeout quick win, UX quick win รอบ 2 — ดู `CLAUDE.md` ข้อ 24/26) ทำให้เอกสารนี้ต้องปรับ 2 จุด: **(ก)** เลขนัมเบอร์ migration ในข้อ 8 เลื่อนทั้งหมด (24→25, 25→26, 26→27, 27→28, 28→29) เพราะเลข 24 ถูกใช้ไปกับ cron timeout fix ที่ไม่ได้อยู่ในแผนเดิม **(ข)** เพิ่มหัวข้อ P0.5 (งาน UX เก็บตกจาก feedback เจ้าของรอบ 10 ก.ค.) เข้าไปในเฟส P0 — ดูรายละเอียดในข้อ 3 ด้านล่าง
+
 ---
 
 ## 0. หลักการคงที่ (Invariants) — สิ่งที่แผนนี้ไม่แตะ
@@ -61,12 +63,13 @@ P3  ─                               P3 Multi-office packaging (ก.ย.+)
 
 ## 3. เฟส P0 — เก็บตก + อุดความเสี่ยง (ก.ค. สัปดาห์ 2-3, ก่อน 20 ก.ค.)
 
-### P0.1 งานเก็บตกเล็ก (ครึ่งวัน — quick win)
+### P0.1 งานเก็บตกเล็ก (ครึ่งวัน — quick win) — ✅ เสร็จแล้ว 10 ก.ค. 2569
 - `report.html`: เพิ่มคอลัมน์ "สิทธิ์หัวหน้า" ในตารางรายชื่อ ให้เท่ากับ `dashboard.html` (ข้อมูลมีอยู่แล้วใน RPC ที่เรียกอยู่ แค่ render เพิ่ม)
 - error-message mapping ของปุ่มกันลบรูป (`do_set_retention_hold`/`do_supervisor_set_retention_hold`): map ทุก error code ที่ RPC คืนได้ → ข้อความไทย ไม่โชว์โค้ดดิบ
 - ไม่มี migration ใหม่ ทั้งคู่เป็น frontend ล้วน deploy รวมกับ P0 อื่นได้
+- **สถานะ: push แล้ว (commit `37827bc`) verify บนเว็บจริงผ่านหมด — รายละเอียดเต็ม `CLAUDE.md` ข้อ 25**
 
-### P0.2 Git + Netlify CI — แก้ R1 (สำคัญที่สุดของ P0)
+### P0.2 Git + Netlify CI — แก้ R1 (สำคัญที่สุดของ P0) — ✅ เสร็จแล้ว 9 ก.ค. 2569
 **สิ่งที่ทำ:**
 1. เจ้าของสร้าง GitHub repo แบบ **private** (agent ห้ามสร้างบัญชี/login แทน — เหมือนกติกา Supabase Auth) แนะนำชื่อ `rayong-imm-checkin`
 2. โครง repo: `index.html`, `dashboard.html`, `report.html`, โฟลเดอร์ `migrations/` (ย้ายไฟล์ .sql 01–23 เข้าไป), `edge-functions/`, `docs/` (CLAUDE.md, 00_SPEC, เอกสารนี้)
@@ -76,7 +79,9 @@ P3  ─                               P3 Multi-office packaging (ก.ย.+)
 
 **เกณฑ์ผ่าน:** push commit ทดสอบ (แก้ comment 1 บรรทัด) → Netlify auto-deploy สำเร็จ → เว็บจริงไม่มี regression → rollback ผ่าน Netlify UI ได้
 
-### P0.3 PIN rate limiting — แก้ R3 (migration 24)
+**ผลจริง vs แผน (เบี่ยงเบน 2 จุด, บันทึกไว้กันสับสน):** (1) repo สร้างเป็น **public** ไม่ใช่ private ตามแผนเดิม — เจอบั๊ก "Unrecognized Git contributor" เพราะแพลน Netlify Personal ไม่รองรับ private repo ที่ push ผ่าน PAT ทางแก้คือเปลี่ยน repo เป็น public แทนการอัปเกรดแพลน (รายละเอียด `CLAUDE.md` ข้อ 23.3) (2) **ไม่ได้ใช้ branch/PR + Deploy Preview URL** ตามที่แผนนี้เสนอไว้ในข้อ 4 ด้านบน — โปรเจกต์ตัดสินใจ push ตรงไป `main` เสมอเหมือนเดิม (เหตุผล: workflow เดิมของเจ้าของคือแก้เสร็จ→ส่งไฟล์จากเครื่องให้ตรวจ→confirm→push อยู่แล้ว ไม่ต้องพึ่ง preview URL เพิ่ม) ยังไม่ปิดโอกาสเปลี่ยนมาใช้ PR flow ในอนาคตถ้าจำเป็น — รายละเอียดเต็ม `CLAUDE.md` ข้อ 23 ทั้งหมด (23.1–23.7)
+
+### P0.3 PIN rate limiting — แก้ R3 (migration 25 — ไม่ใช่ 24 ตามที่เขียนไว้เดิม เพราะ 24 ถูกใช้ไปกับ cron timeout fix แล้ว ดูข้อ 8)
 - เพิ่มคอลัมน์ `officer.pin_fail_count int default 0`, `officer.pin_locked_until timestamptz`
 - สร้างฟังก์ชันกลาง `check_and_count_pin(p_officer_id, p_pin)` ให้ RPC ตระกูล PIN ทุกตัวเรียกแทนการเทียบ `crypt()` ตรงๆ: ผิด → count+1, ครบ 5 ครั้ง → ล็อก 15 นาที (`pin_locked_until`), ถูก → reset count เป็น 0, ระหว่างล็อก → คืน error `pin_locked` พร้อมเวลาปลด
 - frontend ทุกจุดที่กรอก PIN: map error `pin_locked` → "ใส่ PIN ผิดหลายครั้ง กรุณารอ X นาที"
@@ -85,9 +90,23 @@ P3  ─                               P3 Multi-office packaging (ก.ย.+)
 
 **เกณฑ์ผ่าน:** ใส่ PIN ผิด 5 ครั้ง → ล็อก, ครั้งที่ 6 แม้ถูกก็ถูกปฏิเสธจนพ้นเวลา, PIN ถูกก่อนครบ 5 → count reset, รีเซ็ต PIN → ปลดล็อก (ทดสอบด้วยแถวทดสอบชั่วคราวแล้วลบทิ้งตามวินัยเดิม)
 
-### P0.4 Backup ประจำ — แก้ R4
-- ทางเลือกที่แนะนำ (ต้นทุนศูนย์): scheduled task ของ Cowork เดือนละ 2 ครั้ง export ตาราง `check_in`, `officer`, `settings`, `public_holiday`, `stats_period_override` เป็น CSV เก็บลงโฟลเดอร์ `backups/` ใน repo (private อยู่แล้ว) — รูปถ่ายไม่ต้อง backup (มีนโยบายลบ 31 วันอยู่แล้ว โดยธรรมชาติเป็นข้อมูลชั่วคราว)
+### P0.4 Backup ประจำ — แก้ R4 (ยังไม่เริ่มทำ)
+- ทางเลือกที่แนะนำ (ต้นทุนศูนย์): scheduled task ของ Cowork เดือนละ 2 ครั้ง export ตาราง `check_in`, `officer`, `settings`, `public_holiday`, `stats_period_override` เป็น CSV เก็บลงโฟลเดอร์ `backups/` ใน repo — **⚠️ ข้อควรระวังหลัง P0.2 เสร็จจริง:** repo เปลี่ยนเป็น **public** แล้ว (ไม่ใช่ private ตามที่แผนนี้สมมติไว้ตอนเขียน — ดูเบี่ยงเบนใน P0.2 ด้านบน) ถ้าจะ backup ข้อมูลเช็กอินจริงลง repo เดิม **ต้องพิจารณาใหม่** เพราะข้อมูลเจ้าหน้าที่จะเปิดเผยต่อสาธารณะไปด้วย ทางเลือกที่ปลอดภัยกว่า: เก็บ backup ไว้ในโฟลเดอร์ Cowork outputs/OneDrive แทน หรือสร้าง private repo แยกต่างหากเฉพาะ backup — ต้องตัดสินใจร่วมกับเจ้าของก่อนเริ่ม ไม่ใช่แค่ทำตามแผนเดิมเฉยๆ
 - ทางเลือกเสริมถ้าเจ้าของยอมจ่าย: Supabase Pro plan ($25/เดือน) ได้ daily backup + PITR — ยังไม่จำเป็นที่สเกลนี้
+
+### P0.5 UX quick win เพิ่มเติมจาก feedback เจ้าของ (บันทึกเพิ่ม 10 ก.ค. 2569 — นอกแผนเดิม แต่เข้าเกณฑ์ P0 เพราะต้นทุนต่ำ ไม่แตะ RPC/schema)
+
+เจ้าของรีวิวการใช้งานจริงแล้วส่ง feedback รายหน้า แบ่งเป็นทำแล้ว/ยังไม่ทำ:
+
+**✅ ทำแล้ว — `index.html` (push แล้ว, รายละเอียดเต็ม `CLAUDE.md` ข้อ 26):**
+- ขยาย GPS geolocation timeout 8 วิ → 20 วิ (commit `f58cd48`) — ลดม่วง "เช็กอินไม่สมบูรณ์" ปลอมจาก GPS ตอบช้า
+- จำชื่อล่าสุดที่เลือกใน `localStorage` เป็นค่า default ครั้งถัดไป (commit `5f7cac2`)
+- ปุ่มลัด "⚡ ปฏิบัติงานปกติ" กรอกหมายเหตุอัตโนมัติ (commit `5f7cac2`)
+- แสดงสถานะ GPS (🟡/🟢/🔴/⚪) ในหน้า "ตรวจสอบก่อนยืนยัน" ไม่ใช่แค่ตอน modal ม่วงเด้ง (commit `5f7cac2`)
+
+**📋 ยังไม่ทำ — รอคิว:**
+- **Dashboard:** เมนูลอย/จัดกลุ่มการ์ดเป็น "ประจำวัน / รายงาน / ตั้งค่า" (ตอนนี้มี 11 การ์ดหน้าเดียว scroll ยาว) — ต้นทุนต่ำมาก (CSS/anchor link ล้วน ไม่แตะ RPC) แนะนำทำก่อนเริ่ม P1 เพราะการ์ดใหม่ (team coverage) จะเพิ่มเป็นการ์ดที่ 12 ยิ่งรกกว่าเดิมถ้าไม่จัดกลุ่มก่อน
+- **Report.html:** ตาราง 9-10 คอลัมน์อ่านยากบนมือถือแนวตั้ง — ระยะสั้นแนะนำหัวหน้าใช้แนวนอน/คอมก่อน ระยะยาวค่อยทำ card layout (งานใหญ่กว่า ต้อง redesign ทั้งหน้า ไม่ใช่ quick win แล้ว — ควรทำแยกเป็นงานเดี่ยวไม่พ่วง P0)
 
 ---
 
@@ -96,7 +115,7 @@ P3  ─                               P3 Multi-office packaging (ก.ย.+)
 ### ⚠️ การปรับดีไซน์จากที่ยืนยันไว้ (ต้องแจ้งเจ้าของก่อนเริ่ม)
 ดีไซน์เดิม (CLAUDE.md ข้อ 22) ระบุ "เพิ่มคอลัมน์ `officer.team_name` text พอ" — **แผนนี้เสนอเปลี่ยนเป็นตาราง `work_group` ตั้งแต่แรก** เพราะฟีเจอร์เฟส P2 อีก 2 ตัว (ระบบแผนก + สิทธิ์หัวหน้าตามแผนก) ต้องการโครงสร้าง "กลุ่มงาน" แบบเดียวกันเป๊ะ ถ้าใช้ text ตอนนี้จะต้อง migrate ซ้ำใน 1 เดือน ต้นทุนเพิ่มขึ้นเปล่าๆ ส่วนตรรกะ badge/เกณฑ์เวลา/UI คงตามดีไซน์ที่ยืนยันแล้วทุกอย่าง — ถ้าเจ้าของไม่เห็นด้วย ให้ถอยกลับไปใช้ `team_name` text ตามดีไซน์เดิมได้โดย badge ทีมไม่กระทบ
 
-### P1.1 Backend (migration 25)
+### P1.1 Backend (migration 26 — เดิมเขียนว่า 25 ในร่างแรก เลื่อนเพราะ 24 ถูกใช้ไปกับ cron timeout fix แล้ว ดูข้อ 8)
 ```sql
 create table public.work_group (
   id          uuid primary key default gen_random_uuid(),
@@ -133,7 +152,7 @@ alter table public.settings add column team_warn_before time not null default '0
 - ผลของวันเริ่มนับ (`stats_period_override` ก.ค. เริ่ม 6 ก.ค.) ต้อง apply เหมือนสถิติส่วนบุคคล
 - สรุปเป็นรายงานสั้นให้เจ้าของดูก่อนตัดสินใจ weights
 
-### P2.2 Scoring framework (migration 26)
+### P2.2 Scoring framework (migration 27 — เดิมเขียนว่า 26 ในร่างแรก เลื่อนเพราะ 24 ถูกใช้ไปกับ cron timeout fix แล้ว ดูข้อ 8)
 ```sql
 create table public.scoring_config (
   id int primary key default 1 check (id = 1),
@@ -147,7 +166,7 @@ create table public.scoring_config (
 - UI: การ์ด "🏆 สรุปคะแนนประจำเดือน" ใน dashboard/report แสดงเฉพาะเมื่อ `enabled=true` — **เห็นเฉพาะหัวหน้า** ใน v นี้ (ยังไม่โชว์ ranking ให้เจ้าหน้าที่เห็นกันเอง — กระดานจัดอันดับสาธารณะมีความเสี่ยงด้านขวัญกำลังใจ ให้เจ้าของตัดสินใจแยกทีหลังจากเห็นข้อมูลจริง)
 - การให้รางวัลจริง = การตัดสินใจของเจ้าของนอกระบบ ระบบมีหน้าที่แค่คำนวณอย่างโปร่งใส ตรวจย้อนได้
 
-### P2.3 ระบบแผนกเต็มรูป + สิทธิ์หัวหน้าตามแผนก (migration 27)
+### P2.3 ระบบแผนกเต็มรูป + สิทธิ์หัวหน้าตามแผนก (migration 28 — เดิมเขียนว่า 27 ในร่างแรก เลื่อนเพราะ 24 ถูกใช้ไปกับ cron timeout fix แล้ว ดูข้อ 8)
 - ใช้ `work_group` จาก P1 เป็นแผนกได้เลย (เพิ่มกลุ่มที่เหลือจนครบทุกคนใน 19 คน) — นี่คือผลตอบแทนของการตัดสินใจใน P1
 - ตาราง `supervisor_scope (supervisor_id uuid, work_group_id uuid, primary key ทั้งคู่)` — **ไม่มีแถว = เห็นทุกแผนก** (backward compatible: หัวหน้า 3 คนปัจจุบันไม่มีแถว → พฤติกรรมเหมือนเดิมเป๊ะ ไม่ต้อง migrate สิทธิ์)
 - แก้ RPC อ่านข้อมูลฝั่งหัวหน้า (`*_get_today`, `*_get_history`, `*_get_absentees`, `*_get_team_coverage`) ให้ join กรองตาม scope ของผู้เรียก
@@ -168,7 +187,7 @@ create table public.scoring_config (
 | ต้นทุน refactor | สูงมาก (แก้ทุก RPC ทุกตาราง) | ต่ำ — โค้ดเดิมใช้ได้เกือบทั้งหมด |
 | งาน maintain | อัปเดตครั้งเดียวได้ทุกหน่วย | ต้อง update หลาย instance — แก้ด้วย git template (ดูล่าง) |
 
-### P3.1 กวาด hardcode ออกจากโค้ด — แก้ R5 (migration 28)
+### P3.1 กวาด hardcode ออกจากโค้ด — แก้ R5 (migration 29 — เดิมเขียนว่า 28 ในร่างแรก เลื่อนเพราะ 24 ถูกใช้ไปกับ cron timeout fix แล้ว ดูข้อ 8)
 - เพิ่ม `settings.office_name text` (แสดงใน header ทุกหน้า + ชื่อหัวกล่องม็อตโต้ "Rayong Immigration Service" → ดึงจาก settings), `settings.incomplete_radius_m int default 50` (แก้ 50 ม. ที่ hardcode ใน `do_check_in`/`do_check_distance`)
 - ไล่ grep ทั้ง 3 ไฟล์ HTML หา string เฉพาะระยอง แล้วย้ายเข้า settings หรือตัวแปร config หัวไฟล์
 - ผูกเข้า `do_get_settings`/`do_set_settings` ให้แก้ผ่าน UI ได้
@@ -196,15 +215,18 @@ create table public.scoring_config (
 
 ## 8. สรุปลำดับ migration + dependency
 
+**⚠️ (10 ก.ค. 2569) ตารางนี้เลื่อนเลขทั้งหมดจากที่ร่างไว้ตอนแรก:** เลข `24` ที่แผนนี้จองไว้ให้ P0.3 ถูกใช้ไปกับงานแก้บั๊ก "cron timeout สั้นเกินไป" (`24_cron_timeout_fix.sql`) ซึ่งเป็นงานฉุกเฉินนอกแผนที่ทำไปก่อนแล้ว (ดู `CLAUDE.md` ข้อ 2.11/24.1) migration ถัดไปจริงจึงเริ่มที่ **25** ตารางด้านล่างคือเลขที่ถูกต้องล่าสุด — ถ้า agent ตัวถัดไปเจอเอกสารเก่ากว่านี้อ้างเลข 24=P0.3/25=P1.1/26=P2.2/27=P2.3/28=P3.1 ให้ยึดตารางนี้แทน
+
 | Migration | เฟส | เนื้อหา | ขึ้นกับ |
 |---|---|---|---|
-| 24 | P0.3 | PIN rate limiting | — |
-| 25 | P1.1 | work_group + team coverage + เกณฑ์เวลาทีม | ควรมี git (P0.2) ก่อน |
-| 26 | P2.2 | scoring_config + month scores | ข้อมูลครบเดือน + P2.1 |
-| 27 | P2.3 | supervisor_scope + กรอง RPC ตาม scope | 25 (ใช้ work_group) |
-| 28 | P3.1 | office_name + incomplete_radius_m + กวาด hardcode | — (ทำก่อน 27 ได้ถ้าอยากสลับ) |
+| 24 | *(ใช้ไปแล้ว)* | cron timeout fix สำหรับ `delete-old-photos-daily` — งานฉุกเฉินนอกแผน ✅ เสร็จแล้ว 10 ก.ค. 2569 | — |
+| 25 | P0.3 | PIN rate limiting | — |
+| 26 | P1.1 | work_group + team coverage + เกณฑ์เวลาทีม | ควรมี git (P0.2 ✅ เสร็จแล้ว) ก่อน |
+| 27 | P2.2 | scoring_config + month scores | ข้อมูลครบเดือน + P2.1 |
+| 28 | P2.3 | supervisor_scope + กรอง RPC ตาม scope | 26 (ใช้ work_group) |
+| 29 | P3.1 | office_name + incomplete_radius_m + กวาด hardcode | — (ทำก่อน 28 ได้ถ้าอยากสลับ) |
 
-กติกาเดิมยังใช้: migration รันบน Supabase ได้ทันทีไม่ต้องรอ confirm, ห้ามรัน 01–23 ซ้ำ, DROP FUNCTION ก่อนเมื่อเปลี่ยน return columns, ทดสอบด้วยแถวชั่วคราวแล้วลบทิ้ง, ตาราง `settings` ต้อง backup/restore ค่าจริงเมื่อทดสอบเขียน
+กติกาเดิมยังใช้: migration รันบน Supabase ได้ทันทีไม่ต้องรอ confirm, ห้ามรัน 01–24 ซ้ำ (24 ใช้ไปแล้ว ไม่ใช่แค่ 01–23), DROP FUNCTION ก่อนเมื่อเปลี่ยน return columns, ทดสอบด้วยแถวชั่วคราวแล้วลบทิ้ง, ตาราง `settings` ต้อง backup/restore ค่าจริงเมื่อทดสอบเขียน
 
 ---
 
@@ -218,3 +240,4 @@ create table public.scoring_config (
 ---
 
 *จัดทำ 6 ก.ค. 2569 — อัปเดตเอกสารนี้เมื่อเจ้าของเปลี่ยนทิศทาง และบันทึกงานที่เสร็จลง `CLAUDE.md` ตามวินัยเดิม*
+*อัปเดตล่าสุด 10 ก.ค. 2569 — ปรับเลข migration ที่เลื่อน (24 ถูกใช้ไปกับ cron timeout fix นอกแผน), mark P0.1/P0.2 เสร็จแล้ว, เพิ่ม P0.5 (UX quick win จาก feedback เจ้าของ — ทำแล้ว 4 อย่างใน `index.html`, เหลือ 2 อย่างใน dashboard/report.html), บันทึกเบี่ยงเบนจริงของ P0.2 (repo เป็น public ไม่ใช่ private, push ตรง main ไม่ใช้ PR flow) — รายละเอียดเต็มทุกจุดอยู่ใน `CLAUDE.md` ข้อ 23/24/25/26*
