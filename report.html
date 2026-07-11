@@ -71,6 +71,23 @@
   .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px;}
   .modal-box{background:#fff; border-radius:16px; padding:24px; max-width:420px; width:100%; max-height:90vh; overflow-y:auto;}
   .modal-box select{width:100%; padding:12px 14px; font-size:15px; border:1px solid #d1d5db; border-radius:10px; margin-top:0;}
+  html{scroll-behavior:smooth;}
+  .group-nav{
+    position:sticky; top:0; z-index:100;
+    display:flex; gap:8px; background:var(--bg);
+    padding:10px 0; margin-bottom:4px; flex-wrap:wrap;
+  }
+  .group-nav a{
+    background:var(--card); color:var(--text); text-decoration:none;
+    padding:8px 16px; border-radius:999px; font-size:14px; font-weight:600;
+    box-shadow:0 1px 3px rgba(0,0,0,.1);
+  }
+  .group-nav a:hover{background:#e5e7eb;}
+  .group-section{scroll-margin-top:58px;}
+  .group-heading{
+    font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.5px; margin:22px 4px 10px;
+  }
 </style>
 </head>
 <body>
@@ -113,121 +130,139 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>📢 กล่องม็อตโต้ / ข้อความบริการ (หมุนเวียน 3 ข้อความ)</h2>
-      <p class="sub" style="margin:0 0 4px;">ระบบจะหมุนแสดงข้อความทั้ง 3 สลับกันไปทุกวันทำงาน (ข้ามเสาร์-อาทิตย์) ให้เจ้าหน้าที่เห็นหลังเช็กอินเสร็จโดยอัตโนมัติ ไม่ต้องตั้งเอง แก้ไขได้โดยหัวหน้าทั้ง 3 คน ช่องที่มีป้าย "🟢 กำลังใช้วันนี้" คือข้อความที่เจ้าหน้าที่กำลังเห็นอยู่ตอนนี้</p>
+    <nav class="group-nav">
+      <a href="#group-daily">📋 ประจำวัน</a>
+      <a href="#group-reports">📊 รายงาน</a>
+      <a href="#group-settings">⚙️ ตั้งค่า</a>
+    </nav>
 
-      <div id="mottoSlot1Badge" class="hidden" style="margin:14px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
-      <label for="mottoInput1">ข้อความที่ 1</label>
-      <textarea id="mottoInput1" maxlength="300" placeholder="เช่น ยิ้มแย้มแจ่มใส ให้บริการด้วยใจ ทุกคนคือคนสำคัญ"></textarea>
-      <div class="char-count" id="mottoCharCount1">0 / 300</div>
-      <div id="mottoError1" class="error-box hidden"></div>
-      <div id="mottoSuccess1" class="success-box hidden">บันทึกข้อความที่ 1 เรียบร้อยแล้ว</div>
-      <button class="btn-primary" id="btnSaveMotto1" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 1</button>
+    <div id="group-daily" class="group-section">
+      <h3 class="group-heading">📋 ประจำวัน</h3>
 
-      <div id="mottoSlot2Badge" class="hidden" style="margin:24px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
-      <label for="mottoInput2" style="margin-top:24px;">ข้อความที่ 2</label>
-      <textarea id="mottoInput2" maxlength="300"></textarea>
-      <div class="char-count" id="mottoCharCount2">0 / 300</div>
-      <div id="mottoError2" class="error-box hidden"></div>
-      <div id="mottoSuccess2" class="success-box hidden">บันทึกข้อความที่ 2 เรียบร้อยแล้ว</div>
-      <button class="btn-primary" id="btnSaveMotto2" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 2</button>
-
-      <div id="mottoSlot3Badge" class="hidden" style="margin:24px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
-      <label for="mottoInput3" style="margin-top:24px;">ข้อความที่ 3</label>
-      <textarea id="mottoInput3" maxlength="300"></textarea>
-      <div class="char-count" id="mottoCharCount3">0 / 300</div>
-      <div id="mottoError3" class="error-box hidden"></div>
-      <div id="mottoSuccess3" class="success-box hidden">บันทึกข้อความที่ 3 เรียบร้อยแล้ว</div>
-      <button class="btn-primary" id="btnSaveMotto3" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 3</button>
-    </div>
-
-    <div class="card">
-      <div class="topbar">
-        <h2>เช็กอินวันนี้ (<span id="todayLabel">-</span>)</h2>
-        <button class="btn-small" id="btnExportToday">📊 Export Excel (วันนี้)</button>
+      <div class="card">
+        <div class="topbar">
+          <h2>เช็กอินวันนี้ (<span id="todayLabel">-</span>)</h2>
+          <button class="btn-small" id="btnExportToday">📊 Export Excel (วันนี้)</button>
+        </div>
+        <div id="todayTableWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
-      <div id="todayTableWrap"><div class="center">กำลังโหลด...</div></div>
-    </div>
 
-    <div class="card">
-      <h2>⚠️ วันนี้แจ้งไม่พร้อม</h2>
-      <p class="sub" style="margin:0 0 12px;">ดึงเฉพาะคนที่ติ๊ก "ไม่พร้อม" ตอนเช็กอิน พร้อมหมายเหตุที่เขาให้เหตุผลไว้ — ให้ดูง่ายโดยไม่ต้องไล่อ่านทุกแถวในตารางเช็กอินวันนี้</p>
-      <div id="notReadyWrap"><div class="center">กำลังโหลด...</div></div>
-    </div>
-
-    <div class="card">
-      <h2>🟤 ขาดเช็กอิน (วันนี้)</h2>
-      <p class="sub" style="margin:0 0 12px;">แสดงเฉพาะผู้ที่ควรทำงานวันนี้ตามวันทำงานที่ตั้งไว้ และไม่ตรงกับวันหยุดนักขัตฤกษ์ — จะฟันธงหลังเวลา 16:30 น. เท่านั้น เผื่อบางคนมีธุระช่วงเช้าแล้วมาทำงานช่วงบ่าย</p>
-      <div id="absenteesWrap"><div class="center">กำลังโหลด...</div></div>
-    </div>
-
-    <div class="card">
-      <h2>ประวัติย้อนหลัง</h2>
-      <div class="filter-row">
-        <div>
-          <label for="histStart">จากวันที่</label>
-          <input type="date" id="histStart">
-        </div>
-        <div>
-          <label for="histEnd">ถึงวันที่</label>
-          <input type="date" id="histEnd">
-        </div>
-        <div>
-          <label for="histOfficerFilter">กรองรายคน</label>
-          <select id="histOfficerFilter"><option value="">ทุกคน</option></select>
-        </div>
-        <button class="btn-primary" id="btnHistSearch" style="width:auto; margin-top:0; padding:12px 20px;">ค้นหา</button>
-        <button class="btn-small" id="btnExportHist" style="padding:12px 20px;">📊 Export Excel</button>
+      <div class="card">
+        <h2>⚠️ วันนี้แจ้งไม่พร้อม</h2>
+        <p class="sub" style="margin:0 0 12px;">ดึงเฉพาะคนที่ติ๊ก "ไม่พร้อม" ตอนเช็กอิน พร้อมหมายเหตุที่เขาให้เหตุผลไว้ — ให้ดูง่ายโดยไม่ต้องไล่อ่านทุกแถวในตารางเช็กอินวันนี้</p>
+        <div id="notReadyWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
-      <div id="histError" class="error-box hidden"></div>
-      <div id="remarkSummaryCard" class="hidden" style="margin-bottom:16px;">
-        <h3 style="font-size:15px; margin:0 0 8px;">📋 สรุปหมายเหตุเพิ่มเติมตามคีย์เวิร์ด (เฉพาะช่วงที่ค้นหา)</h3>
-        <div id="remarkSummaryWrap"></div>
+
+      <div class="card">
+        <h2>🟤 ขาดเช็กอิน (วันนี้)</h2>
+        <p class="sub" style="margin:0 0 12px;">แสดงเฉพาะผู้ที่ควรทำงานวันนี้ตามวันทำงานที่ตั้งไว้ และไม่ตรงกับวันหยุดนักขัตฤกษ์ — จะฟันธงหลังเวลา 16:30 น. เท่านั้น เผื่อบางคนมีธุระช่วงเช้าแล้วมาทำงานช่วงบ่าย</p>
+        <div id="absenteesWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
-      <div id="histTableWrap"><div class="center">เลือกช่วงวันที่แล้วกด "ค้นหา"</div></div>
     </div>
 
-    <div class="card">
-      <h2>รายชื่อเจ้าหน้าที่ทั้งหมด</h2>
-      <p class="sub" style="margin:0 0 12px;">กด "รีเซ็ต PIN" ถ้าใครลืมรหัส — เขาจะตั้ง PIN ใหม่เองได้ตอนล็อกอินครั้งถัดไป</p>
-      <div id="officersTableWrap"><div class="center">กำลังโหลด...</div></div>
+    <div id="group-reports" class="group-section">
+      <h3 class="group-heading">📊 รายงาน</h3>
+
+      <div class="card">
+        <h2>ประวัติย้อนหลัง</h2>
+        <div class="filter-row">
+          <div>
+            <label for="histStart">จากวันที่</label>
+            <input type="date" id="histStart">
+          </div>
+          <div>
+            <label for="histEnd">ถึงวันที่</label>
+            <input type="date" id="histEnd">
+          </div>
+          <div>
+            <label for="histOfficerFilter">กรองรายคน</label>
+            <select id="histOfficerFilter"><option value="">ทุกคน</option></select>
+          </div>
+          <button class="btn-primary" id="btnHistSearch" style="width:auto; margin-top:0; padding:12px 20px;">ค้นหา</button>
+          <button class="btn-small" id="btnExportHist" style="padding:12px 20px;">📊 Export Excel</button>
+        </div>
+        <div id="histError" class="error-box hidden"></div>
+        <div id="remarkSummaryCard" class="hidden" style="margin-bottom:16px;">
+          <h3 style="font-size:15px; margin:0 0 8px;">📋 สรุปหมายเหตุเพิ่มเติมตามคีย์เวิร์ด (เฉพาะช่วงที่ค้นหา)</h3>
+          <div id="remarkSummaryWrap"></div>
+        </div>
+        <div id="histTableWrap"><div class="center">เลือกช่วงวันที่แล้วกด "ค้นหา"</div></div>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>📅 วันหยุดนักขัตฤกษ์</h2>
-      <p class="sub" style="margin:0 0 12px;">วันที่กำหนดไว้นี้จะไม่ถูกนับเป็น "ขาดเช็กอิน" สำหรับทุกคน หัวหน้าทั้ง 3 คนแก้ไขได้เท่ากัน</p>
-      <div class="filter-row">
-        <div>
-          <label for="holidayDate">วันที่</label>
-          <input type="date" id="holidayDate">
-        </div>
-        <div style="flex:1; min-width:220px;">
-          <label for="holidayDesc">รายละเอียด (ไม่บังคับ)</label>
-          <input type="text" id="holidayDesc" placeholder="เช่น วันแม่แห่งชาติ">
-        </div>
-        <button class="btn-primary" id="btnAddHoliday" style="width:auto; margin-top:0; padding:12px 20px;">เพิ่มวันหยุด</button>
-      </div>
-      <div id="holidayError" class="error-box hidden"></div>
-      <div id="holidaysWrap"><div class="center">กำลังโหลด...</div></div>
-    </div>
+    <div id="group-settings" class="group-section">
+      <h3 class="group-heading">⚙️ ตั้งค่า</h3>
 
-    <div class="card">
-      <h2>📆 วันเริ่มนับสถิติรายเดือน</h2>
-      <p class="sub" style="margin:0 0 12px;">ปกติสถิติส่วนตัวของเจ้าหน้าที่จะนับตั้งแต่วันที่ 1 ของเดือน ถ้าเดือนไหนมีวันทดสอบระบบที่ไม่อยากให้นับ (เช่น เพิ่งเริ่มเปิดใช้งานกลางเดือน) ตั้งวันเริ่มนับใหม่ได้ที่นี่ — มีผลกับสถิติของทุกคนในเดือนนั้น หัวหน้าทั้ง 3 คนแก้ไขได้เท่ากัน</p>
-      <div class="filter-row">
-        <div>
-          <label for="statsPeriodMonth">เดือน</label>
-          <input type="month" id="statsPeriodMonth">
-        </div>
-        <div>
-          <label for="statsPeriodStartDate">เริ่มนับตั้งแต่วันที่</label>
-          <input type="date" id="statsPeriodStartDate">
-        </div>
-        <button class="btn-primary" id="btnSetStatsPeriod" style="width:auto; margin-top:0; padding:12px 20px;">ตั้งค่า</button>
+      <div class="card">
+        <h2>📢 กล่องม็อตโต้ / ข้อความบริการ (หมุนเวียน 3 ข้อความ)</h2>
+        <p class="sub" style="margin:0 0 4px;">ระบบจะหมุนแสดงข้อความทั้ง 3 สลับกันไปทุกวันทำงาน (ข้ามเสาร์-อาทิตย์) ให้เจ้าหน้าที่เห็นหลังเช็กอินเสร็จโดยอัตโนมัติ ไม่ต้องตั้งเอง แก้ไขได้โดยหัวหน้าทั้ง 3 คน ช่องที่มีป้าย "🟢 กำลังใช้วันนี้" คือข้อความที่เจ้าหน้าที่กำลังเห็นอยู่ตอนนี้</p>
+
+        <div id="mottoSlot1Badge" class="hidden" style="margin:14px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
+        <label for="mottoInput1">ข้อความที่ 1</label>
+        <textarea id="mottoInput1" maxlength="300" placeholder="เช่น ยิ้มแย้มแจ่มใส ให้บริการด้วยใจ ทุกคนคือคนสำคัญ"></textarea>
+        <div class="char-count" id="mottoCharCount1">0 / 300</div>
+        <div id="mottoError1" class="error-box hidden"></div>
+        <div id="mottoSuccess1" class="success-box hidden">บันทึกข้อความที่ 1 เรียบร้อยแล้ว</div>
+        <button class="btn-primary" id="btnSaveMotto1" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 1</button>
+
+        <div id="mottoSlot2Badge" class="hidden" style="margin:24px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
+        <label for="mottoInput2" style="margin-top:24px;">ข้อความที่ 2</label>
+        <textarea id="mottoInput2" maxlength="300"></textarea>
+        <div class="char-count" id="mottoCharCount2">0 / 300</div>
+        <div id="mottoError2" class="error-box hidden"></div>
+        <div id="mottoSuccess2" class="success-box hidden">บันทึกข้อความที่ 2 เรียบร้อยแล้ว</div>
+        <button class="btn-primary" id="btnSaveMotto2" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 2</button>
+
+        <div id="mottoSlot3Badge" class="hidden" style="margin:24px 0 4px;"><span class="badge green">🟢 กำลังใช้วันนี้</span></div>
+        <label for="mottoInput3" style="margin-top:24px;">ข้อความที่ 3</label>
+        <textarea id="mottoInput3" maxlength="300"></textarea>
+        <div class="char-count" id="mottoCharCount3">0 / 300</div>
+        <div id="mottoError3" class="error-box hidden"></div>
+        <div id="mottoSuccess3" class="success-box hidden">บันทึกข้อความที่ 3 เรียบร้อยแล้ว</div>
+        <button class="btn-primary" id="btnSaveMotto3" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 3</button>
       </div>
-      <div id="statsPeriodError" class="error-box hidden"></div>
-      <div id="statsPeriodsWrap"><div class="center">กำลังโหลด...</div></div>
+
+      <div class="card">
+        <h2>รายชื่อเจ้าหน้าที่ทั้งหมด</h2>
+        <p class="sub" style="margin:0 0 12px;">กด "รีเซ็ต PIN" ถ้าใครลืมรหัส — เขาจะตั้ง PIN ใหม่เองได้ตอนล็อกอินครั้งถัดไป</p>
+        <div id="officersTableWrap"><div class="center">กำลังโหลด...</div></div>
+      </div>
+
+      <div class="card">
+        <h2>📅 วันหยุดนักขัตฤกษ์</h2>
+        <p class="sub" style="margin:0 0 12px;">วันที่กำหนดไว้นี้จะไม่ถูกนับเป็น "ขาดเช็กอิน" สำหรับทุกคน หัวหน้าทั้ง 3 คนแก้ไขได้เท่ากัน</p>
+        <div class="filter-row">
+          <div>
+            <label for="holidayDate">วันที่</label>
+            <input type="date" id="holidayDate">
+          </div>
+          <div style="flex:1; min-width:220px;">
+            <label for="holidayDesc">รายละเอียด (ไม่บังคับ)</label>
+            <input type="text" id="holidayDesc" placeholder="เช่น วันแม่แห่งชาติ">
+          </div>
+          <button class="btn-primary" id="btnAddHoliday" style="width:auto; margin-top:0; padding:12px 20px;">เพิ่มวันหยุด</button>
+        </div>
+        <div id="holidayError" class="error-box hidden"></div>
+        <div id="holidaysWrap"><div class="center">กำลังโหลด...</div></div>
+      </div>
+
+      <div class="card">
+        <h2>📆 วันเริ่มนับสถิติรายเดือน</h2>
+        <p class="sub" style="margin:0 0 12px;">ปกติสถิติส่วนตัวของเจ้าหน้าที่จะนับตั้งแต่วันที่ 1 ของเดือน ถ้าเดือนไหนมีวันทดสอบระบบที่ไม่อยากให้นับ (เช่น เพิ่งเริ่มเปิดใช้งานกลางเดือน) ตั้งวันเริ่มนับใหม่ได้ที่นี่ — มีผลกับสถิติของทุกคนในเดือนนั้น หัวหน้าทั้ง 3 คนแก้ไขได้เท่ากัน</p>
+        <div class="filter-row">
+          <div>
+            <label for="statsPeriodMonth">เดือน</label>
+            <input type="month" id="statsPeriodMonth">
+          </div>
+          <div>
+            <label for="statsPeriodStartDate">เริ่มนับตั้งแต่วันที่</label>
+            <input type="date" id="statsPeriodStartDate">
+          </div>
+          <button class="btn-primary" id="btnSetStatsPeriod" style="width:auto; margin-top:0; padding:12px 20px;">ตั้งค่า</button>
+        </div>
+        <div id="statsPeriodError" class="error-box hidden"></div>
+        <div id="statsPeriodsWrap"><div class="center">กำลังโหลด...</div></div>
+      </div>
     </div>
   </section>
 
