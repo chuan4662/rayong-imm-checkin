@@ -1,3 +1,4 @@
 .DS_Store
 Thumbs.db
 *.log
+.service_role_key.local.txt

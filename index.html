@@ -509,6 +509,20 @@
     loginError.classList.remove("hidden");
   }
 
+  // (10 ก.ค. 2569) P0.3 PIN rate limiting — กรอก PIN ผิดครบ 5 ครั้งจะล็อกชั่วคราว 15 นาที
+  // แปลง error code "pin_locked" + locked_until (timestamp จาก server) เป็นข้อความไทยที่อ่านง่าย
+  function formatPinLockedMessage(lockedUntil){
+    try {
+      var d = new Date(lockedUntil);
+      var mins = Math.max(1, Math.ceil((d.getTime() - Date.now()) / 60000));
+      var hh = String(d.getHours()).padStart(2, "0");
+      var mm = String(d.getMinutes()).padStart(2, "0");
+      return "กรอกรหัส PIN ผิดหลายครั้งเกินไป ระบบล็อกชั่วคราวเพื่อความปลอดภัย กรุณาลองใหม่อีกครั้งในอีกประมาณ " + mins + " นาที (ประมาณ " + hh + ":" + mm + " น.) หรือติดต่อหัวหน้าให้ช่วยรีเซ็ต PIN";
+    } catch (e) {
+      return "กรอกรหัส PIN ผิดหลายครั้งเกินไป ระบบล็อกชั่วคราวเพื่อความปลอดภัย กรุณาลองใหม่ภายหลัง หรือติดต่อหัวหน้าให้ช่วยรีเซ็ต PIN";
+    }
+  }
+
   // เปิดกล้องสด (getUserMedia เท่านั้น) โดยเลือกได้ทั้งกล้องหน้า (user) และกล้องหลัง (environment)
   function openCamera(facingMode){
     return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode } }, audio: false })
@@ -694,6 +708,11 @@
         showAlreadyCheckedIn();
         return;
       }
+      if (pre.error === "pin_locked") {
+        showScreen("login");
+        showLoginError(formatPinLockedMessage(pre.locked_until));
+        return;
+      }
       if (pre.error === "bad_pin") {
         showScreen("login");
         showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
@@ -777,7 +796,8 @@
       return;
     }
     showScreen("login");
-    if (code === "bad_pin") showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
+    if (code === "pin_locked") showLoginError(formatPinLockedMessage(data.locked_until));
+    else if (code === "bad_pin") showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
     else if (code === "officer_not_found") showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน");
     else showLoginError("เช็กอินไม่สำเร็จ: " + code);
   }
@@ -935,7 +955,7 @@
           bad_pin: "รหัส PIN ไม่ถูกต้อง",
           empty_remark: "กรุณาพิมพ์ข้อความก่อนบันทึก"
         };
-        msgEl.textContent = errMap[d.error] || ("บันทึกไม่สำเร็จ: " + d.error);
+        msgEl.textContent = (d.error === "pin_locked") ? formatPinLockedMessage(d.locked_until) : (errMap[d.error] || ("บันทึกไม่สำเร็จ: " + d.error));
         msgEl.className = "remark-msg err";
         msgEl.classList.remove("hidden");
       }
