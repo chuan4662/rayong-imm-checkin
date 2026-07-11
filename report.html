@@ -88,6 +88,106 @@
     font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase;
     letter-spacing:.5px; margin:22px 4px 10px;
   }
+
+  /* ===== ตารางแบบการ์ดบนมือถือแนวตั้ง (ไม่แตะ JS — ใช้ nth-child แม็ปกับโครงสร้างคอลัมน์ที่ตายตัวของแต่ละตาราง) ===== */
+  @media (max-width: 640px){
+    #app table{display:block; width:100%;}
+    #app table thead{display:none;}
+    #app table tbody{display:block;}
+    #app table tr{display:block; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; margin-bottom:10px;}
+    #app table td{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; text-align:right; padding:7px 0; border-bottom:1px solid #f3f4f6;}
+    #app table td::before{content:""; font-weight:600; color:var(--muted); font-size:12px; text-align:left; flex-shrink:0; white-space:nowrap;}
+
+    /* เซลล์ที่มีเนื้อหายาว/หลายชิ้นส่วน (หมายเหตุ + สถานะที่มี badge ซ้อนกันได้หลายอัน) ให้วางป้ายไว้บนแทน ไม่บีบซ้าย-ขวา */
+    #app table td.note-cell,
+    #todayTableWrap table td:nth-child(3),
+    #histTableWrap table td:nth-child(4){
+      display:block; text-align:left;
+    }
+    #app table td.note-cell::before,
+    #todayTableWrap table td:nth-child(3)::before,
+    #histTableWrap table td:nth-child(4)::before{
+      display:block; margin-bottom:4px;
+    }
+
+    /* เช็กอินวันนี้ (ไม่มีคอลัมน์วันที่) */
+    #todayTableWrap table td:nth-child(1)::before{content:"ชื่อ";}
+    #todayTableWrap table td:nth-child(2)::before{content:"เวลา";}
+    #todayTableWrap table td:nth-child(3)::before{content:"สถานะ";}
+    #todayTableWrap table td:nth-child(4)::before{content:"ระยะห่าง";}
+    #todayTableWrap table td:nth-child(5)::before{content:"ความพร้อม";}
+    #todayTableWrap table td:nth-child(6)::before{content:"หมายเหตุ";}
+    #todayTableWrap table td:nth-child(7)::before{content:"หมายเหตุเพิ่มเติม";}
+    #todayTableWrap table td:nth-child(8)::before{content:"รูป";}
+
+    /* ประวัติย้อนหลัง (มีคอลัมน์วันที่นำหน้า) */
+    #histTableWrap table td:nth-child(1)::before{content:"วันที่";}
+    #histTableWrap table td:nth-child(2)::before{content:"ชื่อ";}
+    #histTableWrap table td:nth-child(3)::before{content:"เวลา";}
+    #histTableWrap table td:nth-child(4)::before{content:"สถานะ";}
+    #histTableWrap table td:nth-child(5)::before{content:"ระยะห่าง";}
+    #histTableWrap table td:nth-child(6)::before{content:"ความพร้อม";}
+    #histTableWrap table td:nth-child(7)::before{content:"หมายเหตุ";}
+    #histTableWrap table td:nth-child(8)::before{content:"หมายเหตุเพิ่มเติม";}
+    #histTableWrap table td:nth-child(9)::before{content:"รูป";}
+
+    /* วันนี้แจ้งไม่พร้อม */
+    #notReadyWrap table td:nth-child(1)::before{content:"ชื่อ";}
+    #notReadyWrap table td:nth-child(2)::before{content:"เวลา";}
+    #notReadyWrap table td:nth-child(3)::before{content:"หมายเหตุ";}
+
+    /* ขาดเช็กอิน */
+    #absenteesWrap table td:nth-child(1)::before{content:"ชื่อ";}
+    #absenteesWrap table td:nth-child(2)::before{content:"ตำแหน่ง";}
+
+    /* สรุปหมายเหตุเพิ่มเติมตามคีย์เวิร์ด */
+    #remarkSummaryWrap table td:nth-child(1)::before{content:"ชื่อ";}
+    #remarkSummaryWrap table td:nth-child(2)::before{content:"🕐 OT/เลิกดึก";}
+    #remarkSummaryWrap table td:nth-child(3)::before{content:"🎯 เป้าหมาย";}
+    #remarkSummaryWrap table td:nth-child(4)::before{content:"📌 งานมอบหมายเพิ่ม";}
+    #remarkSummaryWrap table td:nth-child(5)::before{content:"🤝 เพื่อส่วนรวม";}
+    #remarkSummaryWrap table td:nth-child(6)::before{content:"💡 ปัญหา/เสนอแนะ";}
+    #remarkSummaryWrap table td:nth-child(7)::before{content:"👍 ชื่นชม";}
+    #remarkSummaryWrap table td:nth-child(8)::before{content:"📋 อื่นๆ";}
+    #remarkSummaryWrap table td:nth-child(9)::before{content:"รวมที่มีหมายเหตุ";}
+
+    /* รายชื่อเจ้าหน้าที่ทั้งหมด */
+    #officersTableWrap table td:nth-child(1)::before{content:"ชื่อ";}
+    #officersTableWrap table td:nth-child(2)::before{content:"ชื่อเล่น";}
+    #officersTableWrap table td:nth-child(3)::before{content:"ตำแหน่ง";}
+    #officersTableWrap table td:nth-child(4)::before{content:"สถานะ";}
+    #officersTableWrap table td:nth-child(5)::before{content:"PIN";}
+    #officersTableWrap table td:nth-child(6)::before{content:"วิธีเข้าระบบ";}
+    #officersTableWrap table td:nth-child(7)::before{content:"สิทธิ์หัวหน้า";}
+    #officersTableWrap table td:nth-child(8)::before{content:"วันทำงาน";}
+
+    /* วันหยุดนักขัตฤกษ์ */
+    #holidaysWrap table td:nth-child(1)::before{content:"วันที่";}
+    #holidaysWrap table td:nth-child(2)::before{content:"รายละเอียด";}
+
+    /* วันเริ่มนับสถิติรายเดือน */
+    #statsPeriodsWrap table td:nth-child(1)::before{content:"เดือน";}
+    #statsPeriodsWrap table td:nth-child(2)::before{content:"เริ่มนับวันที่";}
+
+    /* คอลัมน์ปุ่มปฏิบัติการ (คอลัมน์สุดท้ายที่ไม่มีหัวข้อ) — วางปุ่มซ้อนแนวตั้ง ชิดขวา ไม่ต้องมีป้าย */
+    #todayTableWrap table td:last-child,
+    #histTableWrap table td:last-child,
+    #officersTableWrap table td:last-child,
+    #remarkSummaryWrap table td:last-child,
+    #holidaysWrap table td:last-child,
+    #statsPeriodsWrap table td:last-child{
+      display:flex; flex-direction:column; align-items:flex-end; gap:6px;
+      white-space:normal; text-align:right; border-bottom:none; padding-top:10px;
+    }
+    #todayTableWrap table td:last-child::before,
+    #histTableWrap table td:last-child::before,
+    #officersTableWrap table td:last-child::before,
+    #remarkSummaryWrap table td:last-child::before,
+    #holidaysWrap table td:last-child::before,
+    #statsPeriodsWrap table td:last-child::before{
+      content:none;
+    }
+  }
 </style>
 </head>
 <body>
