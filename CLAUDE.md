@@ -26,7 +26,9 @@
 
 **✅✅✅ (13 ก.ค. 2569) P1a เสร็จสมบูรณ์ทั้งหมด — backend (migration 27+28) + frontend (dashboard.html/report.html) + E2E test 4 สถานะ badge + push ขึ้น git สำเร็จแล้ว — ดูข้อ 30:** เจ้าของยืนยันให้เริ่ม P1a (badge ทีม OT + work_group) ได้ทันทีโดยไม่ต้องรอ 20 ก.ค. ตามเดิม — Backend: ตาราง `work_group` (ไม่ pre-seed), `officer.work_group_id`, `settings.team_ok_before`/`team_warn_before`, RPC อ่าน coverage 3 ตัว (migration 27) + RPC จัดการกลุ่ม auth-only 5 ตัว (migration 28) — **เจอ+แก้บั๊กจริงระหว่างทำ: `CREATE OR REPLACE FUNCTION do_set_settings` ที่เพิ่มพารามิเตอร์ใหม่ต่อท้ายกลายเป็นสร้าง overload ซ้ำ ตรวจพบจาก verification query แล้วแก้ด้วย DROP ของเดิมทิ้ง (ดูกติกาใหม่ข้อ 2.14)** — Frontend: การ์ด "🤝 จุดบริการกลุ่มงาน OT" ทั้ง 2 ไฟล์ + การ์ด "จัดการกลุ่มงาน OT" (เฉพาะ dashboard.html) + คอลัมน์ "กลุ่มงาน" ในตารางเจ้าหน้าที่ทั้ง 2 ไฟล์ + mobile CSS ครบ, verify syntax ผ่าน `node --check` ทั้งคู่ — E2E: ทดสอบครบ 4 สถานะ badge (ok/warn/none/pending) ด้วยข้อมูลจำลอง + ยืนยัน snapshot ก่อน-หลังว่าสีเช็กอินรายบุคคลของเจ้าหน้าที่จริง 18 คนไม่เปลี่ยนแปลงเลย ผ่านหมดทุกเคส ลบข้อมูลทดสอบ+ฟังก์ชันชั่วคราวออกครบ — **push ขึ้น git สำเร็จ 13 ก.ค. 2569 (ดู git log สำหรับ hash), verify บนเว็บจริงผ่าน** **⚠️ ข้อสังเกตที่เจ้าของแจ้งไว้ (13 ก.ค. 2569): ไม่ชอบชื่อการ์ด "🤝 จุดบริการกลุ่มงาน OT" ต้องการให้ชวนชัยเปลี่ยนชื่อเองได้ภายหลัง — เป็นแค่ข้อความ HTML 1 บรรทัดในทั้ง 2 ไฟล์ (dashboard.html/report.html) แก้ง่าย ไม่กระทบ backend/RPC เลย ยังไม่ได้แก้ในรอบนี้ รอเจ้าของบอกชื่อใหม่**
 
-อัปเดตล่าสุด: 13 กรกฎาคม 2569 (P1a เสร็จสมบูรณ์ครบ backend+frontend+E2E test+push แล้ว ดูข้อ 30 — ก่อนหน้านี้ 11 ก.ค.) (พบ+แก้บั๊กจริงบน production: ศุภัตราเข้า report.html ไม่ได้ เพราะ `check_and_count_pin` migration 25 บล็อกหัวหน้า PIN ทุกคน — วินิจฉัยจริงผ่าน SQL Editor, แก้เป็น migration 26, verify ผ่าน REST จริง, เจ้าของยืนยันเข้าได้ปกติแล้ว, push ขึ้น git แล้ว (commit `310f123`) ดูข้อ 29 — ก่อนหน้านั้นวันเดียวกัน: P0.5 จัดกลุ่มการ์ด dashboard/report.html + mobile card layout report.html เสร็จสมบูรณ์+push แล้ว (commit `5d146fd`, `310f123`), เพิ่มดีไซน์ P1.3 Grace Card ใน roadmap (ยังไม่เขียนโค้ด), P0.4 backup ตรวจสอบสดแล้วเจ้าของสั่งพักไว้ก่อนผูกกับ P3 ดูข้อ 28 — ก่อนหน้านี้ (10 ก.ค. บ่าย): P0.3 PIN rate limiting SQL migration 25 รันจริง+ทดสอบ E2E+แก้ frontend+push ขึ้น git สำเร็จครบ (commit `4ccfa23`) ดูข้อ 27 — ก่อนหน้านั้นเช้า 10 ก.ค.: ปิดงานบั๊กรูปกำพร้า + แก้ cron timeout + P0.1 เสร็จครบทั้งหมด + GPS timeout quick win + UX quick win รอบ 2 push แล้ว + บันทึกกระบวนการทำงาน/บทเรียน PAT-credit ลงข้อ 26 ดูข้อ 24/24.1/25/26/27/28/29)
+**✅✅ (13 ก.ค. 2569) migration 29 (ห้ามเช็กอินก่อน 07:00 น. ตั้งค่าแก้ได้) เสร็จสมบูรณ์ทั้งหมด — backend + frontend (dashboard.html/index.html) + E2E test ผ่านหมด + push ขึ้น git ในรอบเดียวกับ P1a — ดูข้อ 31:** ที่มา: เจ้าของถามว่าเช็กอินตี 3 จะเกิดอะไรขึ้น พบว่าไม่มีขอบเขตเวลาล่างเลย (ได้สีเขียว+กินโควตา 1 คน/วันไปฟรี) จึงสั่งห้ามเช็กอินก่อน 07:00 น. และให้ชวนชัยแก้เวลานี้ได้ภายหลัง — Backend: คอลัมน์ `settings.checkin_open_after` (default '07:00'), แก้ `do_check_in_impl` ปฏิเสธด้วย error `too_early` ก่อนคำนวณสี, แก้ `do_get_settings`/`do_set_settings` ให้รองรับฟิลด์ใหม่ (DROP signature เดิมก่อนตามกติกาข้อ 2.14 กันบั๊ก overload ซ้ำ ตรวจ `count(*)=1` ผ่านทุกฟังก์ชัน) — Frontend: เพิ่มช่องตั้งเวลาใน dashboard.html การ์ด "⚙️ ตั้งค่าระบบ" + error mapping `too_early`/`formatTooEarlyMessage()` ใน `index.html` verify syntax ผ่าน `node --check` ทั้งคู่ — E2E: ทดสอบผ่าน RPC จริง (`do_check_in` ผ่าน anon key กับ officer ทดสอบ "สมาชิกใหม่") ยืนยันว่าตั้ง `checkin_open_after` ไว้ในอนาคตแล้วเช็กอินถูก reject `too_early` โดยไม่มีแถวถูก insert เลย แล้วรีเซ็ตกลับ 07:00 เช็กอินผ่านสำเร็จตามปกติ ลบข้อมูลทดสอบ+ฟังก์ชันชั่วคราวออกครบ
+
+อัปเดตล่าสุด: 13 กรกฎาคม 2569 (P1a + migration 29 เสร็จสมบูรณ์ทั้งคู่ push ขึ้น git รวมกันในรอบนี้แล้ว ดูข้อ 30/31 — ก่อนหน้านี้ 11 ก.ค.) (พบ+แก้บั๊กจริงบน production: ศุภัตราเข้า report.html ไม่ได้ เพราะ `check_and_count_pin` migration 25 บล็อกหัวหน้า PIN ทุกคน — วินิจฉัยจริงผ่าน SQL Editor, แก้เป็น migration 26, verify ผ่าน REST จริง, เจ้าของยืนยันเข้าได้ปกติแล้ว, push ขึ้น git แล้ว (commit `310f123`) ดูข้อ 29 — ก่อนหน้านั้นวันเดียวกัน: P0.5 จัดกลุ่มการ์ด dashboard/report.html + mobile card layout report.html เสร็จสมบูรณ์+push แล้ว (commit `5d146fd`, `310f123`), เพิ่มดีไซน์ P1.3 Grace Card ใน roadmap (ยังไม่เขียนโค้ด), P0.4 backup ตรวจสอบสดแล้วเจ้าของสั่งพักไว้ก่อนผูกกับ P3 ดูข้อ 28 — ก่อนหน้านี้ (10 ก.ค. บ่าย): P0.3 PIN rate limiting SQL migration 25 รันจริง+ทดสอบ E2E+แก้ frontend+push ขึ้น git สำเร็จครบ (commit `4ccfa23`) ดูข้อ 27 — ก่อนหน้านั้นเช้า 10 ก.ค.: ปิดงานบั๊กรูปกำพร้า + แก้ cron timeout + P0.1 เสร็จครบทั้งหมด + GPS timeout quick win + UX quick win รอบ 2 push แล้ว + บันทึกกระบวนการทำงาน/บทเรียน PAT-credit ลงข้อ 26 ดูข้อ 24/24.1/25/26/27/28/29)
 
 **📌 มีแผนงานใหม่ที่ยืนยันดีไซน์แล้วแต่ตั้งใจ "ยังไม่เริ่มทำ" — ดูข้อ 22 ใน CLAUDE_ARCHIVE.md:** ระบบ badge ระดับทีมสำหรับกลุ่มงานธุรกิจ/ครอบครัว (2 คน/กลุ่ม ที่มักต้อง OT ดึกเป็นประจำ) ดีไซน์ยืนยันกับเจ้าของแล้ว 6 ก.ค. 2569 — **(อัปเดต 13 ก.ค. 2569: P1a เริ่มทำแล้วจริงตามที่เจ้าของยืนยันให้เริ่มก่อนกำหนดเดิม 20 ก.ค. — ดูข้อ 30 ไม่ต้องรออีกต่อไป)**
 
@@ -88,7 +90,7 @@
 
 ---
 
-## 3. โครงสร้างฐานข้อมูล — ไฟล์ migration ทั้งหมด (รันตามลำดับ 01→28)
+## 3. โครงสร้างฐานข้อมูล — ไฟล์ migration ทั้งหมด (รันตามลำดับ 01→29)
 
 ไฟล์อยู่ในโฟลเดอร์นี้ (ทั้งหมดรันจริงบน Supabase SQL Editor แล้ว):
 
@@ -122,8 +124,9 @@
 | `26_fix_supervisor_pin_active_check.sql` | **⚠️ hotfix แก้บั๊ก regression จาก migration 25** — `check_and_count_pin()` เช็ก `active=true` ทำให้หัวหน้า PIN (active=false โดยตั้งใจ) ล็อกอินไม่ได้เลย แก้เป็น `(active=true OR is_supervisor=true)` — ดูข้อ 29 |
 | `27_work_group_p1a.sql` | **P1a: work_group + badge ทีม OT (backend)** — ตาราง `work_group`, คอลัมน์ `officer.work_group_id`, `settings.team_ok_before`/`team_warn_before` (ไม่ pre-seed กลุ่ม), ฟังก์ชันกลาง `do_team_coverage_json()` (revoke จาก anon/authenticated), RPC `do_get_team_coverage()`/`do_supervisor_get_team_coverage(...)`, แก้ `do_list_officers_admin`(DROP+recreate)/`do_supervisor_list_officers_impl`/`do_get_settings`/`do_set_settings` ให้รองรับกลุ่มงาน — ดูข้อ 30 |
 | `28_admin_work_group_rpc.sql` | **P1a: RPC จัดการกลุ่มงาน (auth-only)** — `do_admin_list_work_groups()`, `do_admin_create_work_group(name, is_ot_team)`, `do_admin_update_work_group(id, name, is_ot_team)`, `do_admin_delete_work_group(id)` (unassign officer ก่อนลบ), `do_admin_set_officer_group(officer_id, work_group_id)` — ทั้งหมดเฉพาะชวนชัย (auth) ตาม P1.2 |
+| `29_checkin_open_after.sql` | **ห้ามเช็กอินก่อนเวลาที่กำหนด (default 07:00 น. ตั้งค่าแก้ได้)** — เพิ่ม `settings.checkin_open_after` (time, default '07:00'), แก้ `do_check_in_impl` ปฏิเสธเช็กอินก่อนเวลานี้ด้วย error `too_early` (คืน `open_after` กลับไปด้วย), แก้ `do_get_settings` ให้คืนค่านี้เพิ่ม, แก้ `do_set_settings` เพิ่มพารามิเตอร์ที่ 9 `p_checkin_open_after` (DROP signature เดิม 8 ตัวก่อนตามกติกาข้อ 2.14 กันบั๊ก overload ซ้ำ) — ดูข้อ 31 |
 
-**⚠️ หมายเหตุเลข migration ถัดไป:** เลข 24 ถูกใช้ไปกับ cron timeout fix, เลข 26 ถูกใช้ไปกับ hotfix ฉุกเฉิน, เลข **27–28 ใช้ไปกับ P1a (work_group + RPC จัดการกลุ่ม) แล้ว** (13 ก.ค. 2569 — ดูข้อ 30) migration ถัดไปจริงคือ **29** — ดูตารางเต็มใน `90_ROADMAP_v2_PLAN.md` ข้อ 8
+**⚠️ หมายเหตุเลข migration ถัดไป:** เลข 24 ถูกใช้ไปกับ cron timeout fix, เลข 26 ถูกใช้ไปกับ hotfix ฉุกเฉิน, เลข 27–28 ใช้ไปกับ P1a (work_group + RPC จัดการกลุ่ม), เลข **29 ใช้ไปกับการห้ามเช็กอินก่อนเวลาแล้ว** (13 ก.ค. 2569 — ดูข้อ 31) migration ถัดไปจริงคือ **30** — ดูตารางเต็มใน `90_ROADMAP_v2_PLAN.md` ข้อ 8
 
 **ตารางหลัก:** `settings` (แถวเดียว), `officer` (19 เจ้าหน้าที่ + 3 หัวหน้า, `active=false` สำหรับหัวหน้าเพื่อไม่ให้โผล่ในดรอปดาวน์เช็กอิน), `check_in`, `work_group` (ใหม่ P1a — ยังว่างเปล่า ยังไม่ pre-seed)
 
@@ -462,5 +465,51 @@ alter table public.settings add column team_warn_before time not null default '0
 **⚠️ บั๊กเชิงกระบวนการที่เจอรุนแรงกว่าเดิมรอบนี้ (ยกระดับเป็นกติกาถาวรแล้วที่ข้อ 2.10):** bash-mount staleness คราวนี้ค้างนานถึง **3 วัน** (ไฟล์ที่เพิ่งแก้ในเซสชันนี้ `cp`/`cat` ผ่าน bash ตรงๆ ยังได้เนื้อหาเก่าของวันที่ 10 ก.ค.) ตรวจพบจาก `grep` หาข้อความที่เพิ่งเพิ่มไม่เจอในไฟล์ที่ `cp` มา ทั้งที่ `Grep` tool (ซึ่งอ่านจากไฟล์จริง) เจอปกติ — แก้โดย **re-clone repo สดจาก GitHub เข้า `/tmp` ใหม่ แล้วเขียน Python script replay ทุก `(old_string, new_string)` ที่ทำผ่าน Edit tool ในเซสชันนี้ทับไฟล์ที่ clone มา** (แทนที่จะ `cp` จาก mount ที่ค้าง) แล้ว verify ด้วยจำนวนบรรทัด+marker string+`node --check` ก่อน commit จริง — สำหรับไฟล์ที่ไม่เคยถูก Edit ในเซสชันนี้ (เช่น .sql ที่สร้างด้วย Write ครั้งเดียว) และ `CLAUDE.md` (ที่แก้เยอะจนไม่สะดวก replay ทีละ diff) ใช้วิธีอ่านเนื้อหาเต็มผ่าน `Read` tool แล้ว `Write` ไปที่ outputs (เชื่อถือได้) ก่อน แล้วค่อย `cp` จาก outputs เข้า git working copy
 
 **Verify บนเว็บจริงหลัง push:** `fetch()` เช็ก marker string บน `rayongimm.link/dashboard.html` และ `/report.html` (`teamCoverageWrap`, `do_admin_create_work_group`, `TEAM_BADGE_MAP`, `groupsMgmtWrap` ฯลฯ) ครบทุกจุด
+
+---
+
+## 31. Migration 29 — ห้ามเช็กอินก่อนเวลาที่กำหนด (default 07:00 น. ตั้งค่าแก้ได้) — ✅ เสร็จสมบูรณ์ทั้งหมด รวม push (13 ก.ค. 2569)
+
+**สถานะ: backend (migration 29) + frontend (dashboard.html/index.html) + E2E test ครบทุกจุด verify ผ่านหมดแล้ว + push ขึ้น git แล้วพร้อมกับ P1a ในรอบเดียวกัน**
+
+**ที่มา:** เจ้าของถามเล่นๆ ว่า "ปัจจุบันเปิดให้เช็กอินกี่โมง สมมติอยู่ๆ ไปเช็กอินตอนตี 3 จะเกิดอะไรขึ้น" — ตรวจสอบจริงจากโค้ด `do_check_in_impl` พบว่า**ไม่มีขอบเขตเวลาล่างเลย** เช็กอินตี 3 จะได้สีเขียว "ดีเยี่ยม" และยังกิน quota "1 คน/วัน" ของวันนั้นไปฟรีอีกด้วย — เจ้าของเห็นเป็นความเสี่ยงจริง จึงสั่งทันที: **"ห้ามให้เช็คอินก่อน 07.00 น. ครับ และให้หัวหน้า ชวนชัย สามารถแก้ไข เวลา ในภายหลังได้"**
+
+### 31.1 สถาปัตยกรรมที่เลือก
+
+เพิ่มคอลัมน์ตั้งค่าใหม่ 1 ตัว ตามแพทเทิร์นเดียวกับ threshold time อื่นๆ ที่มีอยู่แล้ว: `alter table public.settings add column checkin_open_after time not null default '07:00';`
+
+**จุดที่แก้ 3 ฟังก์ชัน:**
+1. **`do_check_in_impl`** — เพิ่มการปฏิเสธหลังโหลด `settings`+คำนวณ `v_local` แต่**ก่อน**เช็ก `note_too_short`/`ready_required` และก่อนคำนวณสี: ถ้า `v_local < v_set.checkin_open_after` คืน `{ok:false, error:'too_early', open_after: v_set.checkin_open_after}` ทันที ไม่ insert แถวใดๆ
+2. **`do_get_settings`** — เพิ่ม `checkin_open_after` ใน `json_build_object` (`RETURNS json` เดิม ไม่เปลี่ยน signature, `CREATE OR REPLACE` ตรงๆ ได้)
+3. **`do_set_settings`** — เพิ่มพารามิเตอร์ที่ 9 `p_checkin_open_after` (`DEFAULT NULL`) — **ต้อง `DROP FUNCTION` signature เดิม (8 พารามิเตอร์) ก่อนเสมอ** ตามกติกาข้อ 2.14 แล้วค่อย `CREATE OR REPLACE` 9 พารามิเตอร์ + `GRANT EXECUTE` ใหม่
+
+**Validation ใหม่:** `p_checkin_open_after` ต้องน้อยกว่า `p_green_before` เสมอ (error `invalid_checkin_open_time`) กันตั้งค่าให้ไม่มีใครได้สีเขียวเลย
+
+### 31.2 รัน migration จริง + verify
+
+รันทั้งก้อนผ่าน `tmp_exec_sql` (service_role) สำเร็จครั้งเดียว — verify: `count(*)=1` ทุกฟังก์ชัน (`do_check_in_impl`/`do_get_settings`/`do_set_settings`), `settings.checkin_open_after='07:00:00'`, `has_function_privilege('authenticated', do_set_settings 9-arg, 'execute')=true`
+
+### 31.3 E2E Test จริงผ่าน RPC — ใช้ officer ทดสอบ "สมาชิกใหม่"
+
+ตั้ง PIN ชั่วคราวผ่าน `extensions.crypt()`/`extensions.gen_salt()`:
+1. ตั้ง `checkin_open_after='23:59'` ชั่วคราว → เรียก `do_check_in` ผ่าน anon key จริง → `{"ok":false,"error":"too_early","open_after":"23:59:00"}` ✅ ไม่มีแถว `check_in` ถูก insert เลย ✅
+2. รีเซ็ตกลับ `'07:00'` แล้วเรียกซ้ำ → ผ่านเข้า business logic จริงสำเร็จ `{"ok":true,"status":"red",...}` ✅
+3. Cleanup: ลบแถวทดสอบ, รีเซ็ต `pin_hash=null, pin_fail_count=0, pin_locked_until=null` ของ officer ทดสอบกลับสภาพเดิม, `checkin_open_after` กลับ `07:00:00` ✅
+
+**สรุป: `too_early` ทำงานถูกต้องทั้ง 2 ทิศทาง ✅ ไม่กระทบ business logic เดิมเลย ✅**
+
+### 31.4 Frontend
+
+**`dashboard.html`** — เพิ่มช่อง `<input type="time" id="settingsCheckinOpenAfter">` ในการ์ด "⚙️ ตั้งค่าระบบ" (หัวข้อ "🚫 ห้ามเช็กอินก่อนเวลานี้") + `p_checkin_open_after` ในปุ่มบันทึก + error mapping `invalid_checkin_open_time`
+
+**`index.html`** — เพิ่ม `formatTooEarlyMessage(openAfter)` + branch `else if (code === "too_early")` ใน `handleCheckinError()` (error นี้เกิดจาก `do_check_in`/`do_check_in_impl` เท่านั้น ไม่ต้องแก้จุด precheck `do_get_today_status`)
+
+**Verify syntax:** `node --check` ผ่านทั้ง 2 ไฟล์ ไม่มี syntax error
+
+### 31.5 Cleanup + push
+
+DROP `tmp_defs`/`tmp_exec_sql`/`tmp_query_json` ทิ้งครบหลังใช้เสร็จ — ไม่มีฟังก์ชันสิทธิ์สูงตกค้าง
+
+Push ขึ้น git รวมกับ P1a (migration 27+28) ในรอบเดียวกันตามที่เจ้าของยืนยัน "push รวมกันทีเดียวเลย" — ไฟล์ที่เปลี่ยน: `dashboard.html`, `index.html`, `CLAUDE.md`, ไฟล์ใหม่ `migrations/29_checkin_open_after.sql`
 
 ---

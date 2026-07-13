@@ -523,6 +523,13 @@
     }
   }
 
+  // (13 ก.ค. 2569) Migration 29 — ห้ามเช็กอินก่อนเวลาที่ตั้งไว้ (ค่าเริ่มต้น 07:00 น. ตั้งค่าแก้ได้)
+  // แปลง error code "too_early" + open_after (เวลาแบบ "HH:MM:SS" จาก server) เป็นข้อความไทยที่อ่านง่าย
+  function formatTooEarlyMessage(openAfter){
+    var hhmm = (openAfter ? String(openAfter) : "07:00").slice(0, 5);
+    return "ยังไม่ถึงเวลาเปิดให้เช็กอิน ระบบเปิดให้เช็กอินได้ตั้งแต่เวลา " + hhmm + " น. กรุณากลับมาเช็กอินใหม่อีกครั้งในเวลาดังกล่าว";
+  }
+
   // เปิดกล้องสด (getUserMedia เท่านั้น) โดยเลือกได้ทั้งกล้องหน้า (user) และกล้องหลัง (environment)
   function openCamera(facingMode){
     return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode } }, audio: false })
@@ -797,6 +804,7 @@
     }
     showScreen("login");
     if (code === "pin_locked") showLoginError(formatPinLockedMessage(data.locked_until));
+    else if (code === "too_early") showLoginError(formatTooEarlyMessage(data.open_after));
     else if (code === "bad_pin") showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
     else if (code === "officer_not_found") showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน");
     else showLoginError("เช็กอินไม่สำเร็จ: " + code);

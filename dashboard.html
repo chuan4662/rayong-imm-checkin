@@ -414,6 +414,10 @@
           <div><label style="font-weight:400; font-size:13px;">🟠 มาเลท ก่อน</label><input type="time" id="settingsOrangeBefore"></div>
           <div><label style="font-weight:400; font-size:13px;">🟤 ฟันธงขาดเช็กอินหลัง</label><input type="time" id="settingsAbsentCutoff"></div>
         </div>
+        <label style="margin-top:20px;">🚫 ห้ามเช็กอินก่อนเวลานี้ (ต้องมาก่อนเวลา "ดีเยี่ยม")</label>
+        <div class="filter-row" style="margin-bottom:0;">
+          <div><label style="font-weight:400; font-size:13px;">เปิดให้เช็กอินตั้งแต่</label><input type="time" id="settingsCheckinOpenAfter"></div>
+        </div>
         <div id="settingsError" class="error-box hidden"></div>
         <div id="settingsSuccess" class="success-box hidden">บันทึกการตั้งค่าเรียบร้อยแล้ว</div>
         <button class="btn-primary" id="btnSaveSettings" style="width:auto; padding:10px 24px;">บันทึกการตั้งค่า</button>
@@ -1511,6 +1515,7 @@
       document.getElementById("settingsYellowBefore").value = String(res.data.yellow_before).slice(0, 5);
       document.getElementById("settingsOrangeBefore").value = String(res.data.orange_before).slice(0, 5);
       document.getElementById("settingsAbsentCutoff").value = String(res.data.absent_cutoff_time).slice(0, 5);
+      document.getElementById("settingsCheckinOpenAfter").value = String(res.data.checkin_open_after).slice(0, 5);
     });
   }
 
@@ -1525,7 +1530,8 @@
     var yellow = document.getElementById("settingsYellowBefore").value;
     var orange = document.getElementById("settingsOrangeBefore").value;
     var cutoff = document.getElementById("settingsAbsentCutoff").value;
-    if (isNaN(lat) || isNaN(lng) || !green || !yellow || !orange || !cutoff) {
+    var openAfter = document.getElementById("settingsCheckinOpenAfter").value;
+    if (isNaN(lat) || isNaN(lng) || !green || !yellow || !orange || !cutoff || !openAfter) {
       errEl.textContent = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
       errEl.classList.remove("hidden");
       return;
@@ -1536,7 +1542,8 @@
     sb.rpc("do_set_settings", {
       p_office_lat: lat, p_office_lng: lng,
       p_green_before: green + ":00", p_yellow_before: yellow + ":00",
-      p_orange_before: orange + ":00", p_absent_cutoff_time: cutoff + ":00"
+      p_orange_before: orange + ":00", p_absent_cutoff_time: cutoff + ":00",
+      p_checkin_open_after: openAfter + ":00"
     }).then(function(res){
       btn.disabled = false;
       btn.textContent = "บันทึกการตั้งค่า";
@@ -1545,6 +1552,7 @@
         var msgMap = {
           invalid_coordinates: "พิกัด GPS ไม่ถูกต้อง",
           invalid_time_order: "เวลาต้องเรียงจากน้อยไปมาก (ดีเยี่ยม < ทันพอดี < มาเลท)",
+          invalid_checkin_open_time: "เวลาเปิดให้เช็กอินต้องมาก่อนเวลา \"ดีเยี่ยม\"",
           missing_field: "กรุณากรอกข้อมูลให้ครบ",
           not_supervisor: "ไม่มีสิทธิ์แก้ไข"
         };
