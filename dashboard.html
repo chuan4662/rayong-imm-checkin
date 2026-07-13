@@ -163,6 +163,18 @@
     #officersTableWrap table td:nth-child(6)::before{content:"วิธีเข้าระบบ";}
     #officersTableWrap table td:nth-child(7)::before{content:"สิทธิ์หัวหน้า";}
     #officersTableWrap table td:nth-child(8)::before{content:"วันทำงาน";}
+    #officersTableWrap table td:nth-child(9)::before{content:"กลุ่มงาน";}
+
+    /* จุดบริการกลุ่มงาน OT */
+    #teamCoverageWrap table td:nth-child(1)::before{content:"กลุ่มงาน";}
+    #teamCoverageWrap table td:nth-child(2)::before{content:"สถานะ";}
+    #teamCoverageWrap table td:nth-child(3)::before{content:"สมาชิก";}
+    #teamCoverageWrap table td:nth-child(4)::before{content:"เช็กอินคนแรก";}
+
+    /* จัดการกลุ่มงาน OT */
+    #groupsMgmtWrap table td:nth-child(1)::before{content:"ชื่อกลุ่ม";}
+    #groupsMgmtWrap table td:nth-child(2)::before{content:"Badge OT";}
+    #groupsMgmtWrap table td:nth-child(3)::before{content:"จำนวนสมาชิก";}
 
     /* วันหยุดนักขัตฤกษ์ */
     #holidaysWrap table td:nth-child(1)::before{content:"วันที่";}
@@ -185,7 +197,8 @@
     #remarkSummaryWrap table td:last-child,
     #holidaysWrap table td:last-child,
     #statsPeriodsWrap table td:last-child,
-    #supervisorsWrap table td:last-child{
+    #supervisorsWrap table td:last-child,
+    #groupsMgmtWrap table td:last-child{
       display:flex; flex-direction:column; align-items:flex-end; gap:6px;
       white-space:normal; text-align:right; border-bottom:none; padding-top:10px;
     }
@@ -195,7 +208,8 @@
     #remarkSummaryWrap table td:last-child::before,
     #holidaysWrap table td:last-child::before,
     #statsPeriodsWrap table td:last-child::before,
-    #supervisorsWrap table td:last-child::before{
+    #supervisorsWrap table td:last-child::before,
+    #groupsMgmtWrap table td:last-child::before{
       content:none;
     }
   }
@@ -249,6 +263,12 @@
         <h2>⚠️ วันนี้แจ้งไม่พร้อม</h2>
         <p class="sub" style="margin:0 0 12px;">ดึงเฉพาะคนที่ติ๊ก "ไม่พร้อม" ตอนเช็กอิน พร้อมหมายเหตุที่เขาให้เหตุผลไว้ — ให้ดูง่ายโดยไม่ต้องไล่อ่านทุกแถวในตารางเช็กอินวันนี้</p>
         <div id="notReadyWrap"><div class="center">กำลังโหลด...</div></div>
+      </div>
+
+      <div class="card">
+        <h2>🤝 จุดบริการกลุ่มงาน OT</h2>
+        <p class="sub" style="margin:0 0 12px;">ทีมงานธุรกิจ/ครอบครัว (ปกติ 2 คน/กลุ่ม ที่มัก OT ดึกเป็นประจำ) — เช็กว่ามีอย่างน้อย 1 คนในทีมมาปฏิบัติงานแล้วหรือยัง ไม่กระทบสีเช็กอินรายบุคคลของใครเลย เป็นการ์ดแจ้งเตือนแยกต่างหาก จัดการกลุ่มได้ที่การ์ด "จัดการกลุ่มงาน OT" ด้านล่างสุด</p>
+        <div id="teamCoverageWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
 
       <div class="card">
@@ -318,6 +338,23 @@
         <div id="mottoError3" class="error-box hidden"></div>
         <div id="mottoSuccess3" class="success-box hidden">บันทึกข้อความที่ 3 เรียบร้อยแล้ว</div>
         <button class="btn-primary" id="btnSaveMotto3" style="width:auto; padding:10px 24px;">บันทึกข้อความที่ 3</button>
+      </div>
+
+      <div class="card">
+        <h2>🤝 จัดการกลุ่มงาน OT (เฉพาะชวนชัย)</h2>
+        <p class="sub" style="margin:0 0 12px;">สร้างกลุ่มงานธุรกิจ/ครอบครัว (ปกติ 2 คน/กลุ่ม) แล้วติ๊ก "แสดง badge OT" เพื่อให้กลุ่มขึ้นการ์ด "จุดบริการกลุ่มงาน OT" ด้านบน — มอบสมาชิกเข้ากลุ่มได้ที่ตาราง "รายชื่อเจ้าหน้าที่ทั้งหมด" ด้านล่าง (คอลัมน์ "กลุ่มงาน")</p>
+        <div class="filter-row">
+          <div style="flex:1; min-width:220px;">
+            <label for="newGroupName">ชื่อกลุ่ม</label>
+            <input type="text" id="newGroupName" placeholder="เช่น ทีม A (สมชาย+สมหญิง)">
+          </div>
+          <div>
+            <label style="font-weight:400; font-size:13px;"><input type="checkbox" id="newGroupIsOt" checked> แสดง badge OT</label>
+          </div>
+          <button class="btn-primary" id="btnAddGroup" style="width:auto; margin-top:0; padding:12px 20px;">เพิ่มกลุ่มงาน</button>
+        </div>
+        <div id="groupMgmtError" class="error-box hidden"></div>
+        <div id="groupsMgmtWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
 
       <div class="card">
@@ -467,6 +504,7 @@
   var lastHistRows = [];    // เก็บไว้สำหรับ export excel
   var currentOverrideCheckinId = null;
   var currentOverrideReloadFn = null;
+  var allWorkGroups = [];   // แคช work_group ล่าสุด (โหลดคู่กับ do_list_officers_admin ตอนล็อกอิน)
 
   function showError(msg){
     loginError.textContent = msg;
@@ -491,15 +529,23 @@
 
   function checkSupervisorThenLoad(){
     // ยืนยันว่าบัญชีนี้ผูกกับ officer ที่ is_supervisor = true จริง (RLS จะกันข้อมูลอยู่แล้ว แต่เช็กซ้ำเพื่อ UX ที่ชัดเจน)
-    sb.rpc("do_list_officers_admin").then(function(res){
+    // โหลดคู่กับ work_group เพื่อให้ dropdown "กลุ่มงาน" ในตารางเจ้าหน้าที่มีข้อมูลพร้อมตั้งแต่ render ครั้งแรก
+    Promise.all([
+      sb.rpc("do_list_officers_admin"),
+      sb.rpc("do_admin_list_work_groups")
+    ]).then(function(results){
+      var res = results[0];
+      var wgRes = results[1];
       if (res.error || !res.data || res.data.length === 0) {
         showError("บัญชีนี้ไม่มีสิทธิ์เข้าแดชบอร์ดหัวหน้า (ไม่พบสิทธิ์ is_supervisor) — ติดต่อผู้ดูแลระบบ");
         sb.auth.signOut();
         return;
       }
+      if (!wgRes.error && wgRes.data) { allWorkGroups = wgRes.data; }
       screenLogin.classList.add("hidden");
       screenMain.classList.remove("hidden");
       renderOfficersTable(res.data);
+      renderWorkGroupsMgmt();
       populateHistOfficerFilter(res.data);
       loadTodayCheckins();
       loadMottoAdmin();
@@ -507,6 +553,7 @@
       loadHolidays();
       loadStatsPeriodOverrides();
       loadSettingsAdmin();
+      loadTeamCoverage();
       renderSupervisorsMgmt(res.data);
       var today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
       document.getElementById("histStart").value = today;
@@ -1025,10 +1072,14 @@
       wrap.innerHTML = '<div class="center">ยังไม่มีรายชื่อเจ้าหน้าที่</div>';
       return;
     }
-    var html = '<table><thead><tr><th>ชื่อ</th><th>ชื่อเล่น</th><th>ตำแหน่ง</th><th>สถานะ</th><th>PIN</th><th>วิธีเข้าระบบ</th><th>สิทธิ์หัวหน้า</th><th>วันทำงาน</th><th></th></tr></thead><tbody>';
+    var html = '<table><thead><tr><th>ชื่อ</th><th>ชื่อเล่น</th><th>ตำแหน่ง</th><th>สถานะ</th><th>PIN</th><th>วิธีเข้าระบบ</th><th>สิทธิ์หัวหน้า</th><th>วันทำงาน</th><th>กลุ่มงาน</th><th></th></tr></thead><tbody>';
     rows.forEach(function(o){
       var loginLabel = o.login_method === "auth" ? "Email" : "PIN";
       var canReset = o.login_method !== "auth" && !o.needs_pin_setup;
+      var groupOptions = '<option value="">- ไม่มีกลุ่ม -</option>' + allWorkGroups.map(function(g){
+        var sel = g.id === o.work_group_id ? " selected" : "";
+        return '<option value="' + g.id + '"' + sel + '>' + escapeHtml(g.name) + '</option>';
+      }).join("");
       html += '<tr>' +
         '<td>' + escapeHtml(o.full_name) + '</td>' +
         '<td>' + escapeHtml(o.nickname || "-") + '</td>' +
@@ -1038,6 +1089,7 @@
         '<td>' + loginLabel + '</td>' +
         '<td>' + (o.is_supervisor ? "หัวหน้า" : "-") + '</td>' +
         '<td>' + escapeHtml(formatWorkDays(o.work_days)) + '</td>' +
+        '<td><select data-group-assign="' + o.id + '">' + groupOptions + '</select></td>' +
         '<td style="white-space:nowrap;">' +
           (canReset ? '<button class="btn-danger-small" data-reset="' + o.id + '">รีเซ็ต PIN</button> ' : '') +
           '<button class="btn-row-action" data-workdays="' + o.id + '">แก้วันทำงาน</button>' +
@@ -1046,6 +1098,24 @@
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
+
+    wrap.querySelectorAll("select[data-group-assign]").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var id = sel.getAttribute("data-group-assign");
+        var groupId = sel.value || null;
+        sel.disabled = true;
+        sb.rpc("do_admin_set_officer_group", { p_officer_id: id, p_work_group_id: groupId }).then(function(res){
+          sel.disabled = false;
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            alert("เปลี่ยนกลุ่มงานไม่สำเร็จ: " + code);
+            return;
+          }
+          loadTeamCoverage();
+          loadWorkGroups();
+        });
+      });
+    });
 
     wrap.querySelectorAll("button[data-reset]").forEach(function(btn){
       btn.addEventListener("click", function(){
@@ -1135,6 +1205,166 @@
         if (!r2.error) { renderOfficersTable(r2.data); renderSupervisorsMgmt(r2.data); }
       });
       loadAbsentees();
+    });
+  });
+
+  // ================= 🤝 จุดบริการกลุ่มงาน OT (P1a) =================
+  var TEAM_BADGE_MAP = {
+    ok:      { cls: "green",  emoji: "🟢", text: "มาแล้ว" },
+    warn:    { cls: "orange", emoji: "🟠", text: "มาช้า" },
+    none:    { cls: "red",    emoji: "🔴", text: "ยังไม่มา" },
+    pending: { cls: "gray",   emoji: "⚪", text: "รอ" }
+  };
+  function renderTeamCoverage(data){
+    var wrap = document.getElementById("teamCoverageWrap");
+    if (!data || !data.groups || data.groups.length === 0) {
+      wrap.innerHTML = '<div class="center">ยังไม่มีกลุ่มงาน OT — ตั้งค่าได้ที่การ์ด "จัดการกลุ่มงาน OT" ด้านล่างสุด</div>';
+      return;
+    }
+    var html = '<table><thead><tr><th>กลุ่มงาน</th><th>สถานะ</th><th>สมาชิก</th><th>เช็กอินคนแรก</th></tr></thead><tbody>';
+    data.groups.forEach(function(g){
+      var b = TEAM_BADGE_MAP[g.badge] || TEAM_BADGE_MAP.pending;
+      var firstTime = g.first_checkin_at ? new Date(g.first_checkin_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" }) : "-";
+      var members = (g.member_names && g.member_names.length) ? g.member_names.map(escapeHtml).join(", ") : '<span class="muted">ยังไม่มีสมาชิก</span>';
+      html += '<tr>' +
+        '<td>' + escapeHtml(g.group_name) + '</td>' +
+        '<td><span class="badge ' + b.cls + '">' + b.emoji + ' ' + b.text + '</span></td>' +
+        '<td>' + members + '</td>' +
+        '<td>' + firstTime + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+  function loadTeamCoverage(){
+    sb.rpc("do_get_team_coverage").then(function(res){
+      var wrap = document.getElementById("teamCoverageWrap");
+      if (res.error || !res.data || res.data.ok !== true) {
+        wrap.innerHTML = '<div class="center">โหลดข้อมูลไม่สำเร็จ</div>';
+        return;
+      }
+      renderTeamCoverage(res.data);
+    });
+  }
+
+  // ================= จัดการกลุ่มงาน OT (สร้าง/แก้ชื่อ/ลบ/toggle badge, เฉพาะชวนชัย) =================
+  function loadWorkGroups(){
+    sb.rpc("do_admin_list_work_groups").then(function(res){
+      if (!res.error && res.data) { allWorkGroups = res.data; }
+      renderWorkGroupsMgmt();
+    });
+  }
+  function renderWorkGroupsMgmt(){
+    var wrap = document.getElementById("groupsMgmtWrap");
+    if (!allWorkGroups || allWorkGroups.length === 0) {
+      wrap.innerHTML = '<div class="center">ยังไม่มีกลุ่มงาน — เพิ่มด้านบนได้เลย</div>';
+      return;
+    }
+    var html = '<table><thead><tr><th>ชื่อกลุ่ม</th><th>Badge OT</th><th>จำนวนสมาชิก</th><th></th></tr></thead><tbody>';
+    allWorkGroups.forEach(function(g){
+      html += '<tr>' +
+        '<td>' + escapeHtml(g.name) + '</td>' +
+        '<td>' + (g.is_ot_team ? '<span class="badge green">🟢 แสดง</span>' : '<span class="muted">ไม่แสดง</span>') + '</td>' +
+        '<td>' + g.member_count + '</td>' +
+        '<td style="white-space:nowrap;">' +
+          '<button class="btn-row-action" data-group-rename="' + g.id + '">แก้ชื่อ</button> ' +
+          '<button class="btn-row-action" data-group-toggle="' + g.id + '" data-toggle-to="' + (!g.is_ot_team) + '">' + (g.is_ot_team ? "ปิด badge" : "เปิด badge") + '</button> ' +
+          '<button class="btn-danger-small" data-group-delete="' + g.id + '">ลบกลุ่ม</button>' +
+        '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll("button[data-group-rename]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-group-rename");
+        var g = allWorkGroups.filter(function(x){ return x.id === id; })[0];
+        if (!g) return;
+        var newName = prompt("ชื่อกลุ่มใหม่:", g.name);
+        if (newName === null) return;
+        newName = newName.trim();
+        if (!newName) { alert("กรุณากรอกชื่อกลุ่ม"); return; }
+        sb.rpc("do_admin_update_work_group", { p_id: id, p_name: newName, p_is_ot_team: g.is_ot_team }).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            var msgMap = { duplicate_name: "มีชื่อกลุ่มนี้อยู่แล้ว", name_required: "กรุณากรอกชื่อกลุ่ม", group_not_found: "ไม่พบกลุ่มนี้", not_supervisor: "ไม่มีสิทธิ์" };
+            alert("แก้ชื่อไม่สำเร็จ: " + (msgMap[code] || code));
+            return;
+          }
+          loadWorkGroups();
+          sb.rpc("do_list_officers_admin").then(function(r2){ if (!r2.error) renderOfficersTable(r2.data); });
+          loadTeamCoverage();
+        });
+      });
+    });
+
+    wrap.querySelectorAll("button[data-group-toggle]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-group-toggle");
+        var toggleTo = btn.getAttribute("data-toggle-to") === "true";
+        var g = allWorkGroups.filter(function(x){ return x.id === id; })[0];
+        if (!g) return;
+        sb.rpc("do_admin_update_work_group", { p_id: id, p_name: g.name, p_is_ot_team: toggleTo }).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            alert("เปลี่ยนสถานะ badge ไม่สำเร็จ: " + code);
+            return;
+          }
+          loadWorkGroups();
+          loadTeamCoverage();
+        });
+      });
+    });
+
+    wrap.querySelectorAll("button[data-group-delete]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-group-delete");
+        var g = allWorkGroups.filter(function(x){ return x.id === id; })[0];
+        if (!g) return;
+        if (!confirm('ลบกลุ่ม "' + g.name + '" ใช่หรือไม่?\nสมาชิกในกลุ่ม (' + g.member_count + ' คน) จะถูกถอดออกจากกลุ่มนี้ทันที (ไม่กระทบสถานะเช็กอินรายบุคคล)')) return;
+        sb.rpc("do_admin_delete_work_group", { p_id: id }).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            alert("ลบไม่สำเร็จ: " + code);
+            return;
+          }
+          loadWorkGroups();
+          sb.rpc("do_list_officers_admin").then(function(r2){ if (!r2.error) renderOfficersTable(r2.data); });
+          loadTeamCoverage();
+        });
+      });
+    });
+  }
+
+  document.getElementById("btnAddGroup").addEventListener("click", function(){
+    var errEl = document.getElementById("groupMgmtError");
+    errEl.classList.add("hidden");
+    var nameInput = document.getElementById("newGroupName");
+    var name = nameInput.value.trim();
+    var isOt = document.getElementById("newGroupIsOt").checked;
+    if (!name) {
+      errEl.textContent = "กรุณากรอกชื่อกลุ่ม";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    var btn = document.getElementById("btnAddGroup");
+    btn.disabled = true;
+    btn.textContent = "กำลังเพิ่ม...";
+    sb.rpc("do_admin_create_work_group", { p_name: name, p_is_ot_team: isOt }).then(function(res){
+      btn.disabled = false;
+      btn.textContent = "เพิ่มกลุ่มงาน";
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        var msgMap = { duplicate_name: "มีชื่อกลุ่มนี้อยู่แล้ว", name_required: "กรุณากรอกชื่อกลุ่ม", not_supervisor: "ไม่มีสิทธิ์" };
+        errEl.textContent = "เพิ่มไม่สำเร็จ: " + (msgMap[code] || code);
+        errEl.classList.remove("hidden");
+        return;
+      }
+      nameInput.value = "";
+      document.getElementById("newGroupIsOt").checked = true;
+      loadWorkGroups();
+      loadTeamCoverage();
     });
   });
 
