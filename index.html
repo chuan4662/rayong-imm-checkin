@@ -77,6 +77,15 @@
   .motto-label{font-size:12px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; opacity:.85; margin-bottom:8px;}
   .motto-text{font-size:19px; font-weight:800; line-height:1.55; word-break:break-word;}
 
+  /* เหรียญทอง/เงิน — เช็กอินคนแรก/คนที่สองของวัน (P1b) */
+  .medal-box{
+    margin-top:16px; padding:14px 18px; border-radius:14px;
+    text-align:center; font-weight:800; font-size:16px;
+    box-shadow:0 4px 12px rgba(0,0,0,.15);
+  }
+  .medal-box.gold{background:linear-gradient(135deg,#fde68a,#d97706); color:#78350f;}
+  .medal-box.silver{background:linear-gradient(135deg,#f3f4f6,#9ca3af); color:#1f2937;}
+
   .stats-box{
     margin-top:16px; padding:20px 18px; border-radius:16px;
     background:#ecfdf5; border:1px solid #a7f3d0;
@@ -210,6 +219,8 @@
     <div id="resGpsWarning" class="warning-box hidden">⚠️ คุณเช็กอินโดยไม่ได้เปิด/อนุญาต GPS — ระบบยังบันทึกเช็กอินให้ตามปกติ แต่หัวหน้าจะเห็นว่าไม่มีข้อมูลระยะห่าง</div>
     <button class="btn-primary" id="btnDone">เสร็จสิ้น</button>
 
+    <div id="resultMedalBox" class="medal-box hidden"></div>
+
     <div class="motto-box">
       <div class="motto-label">📢 Rayong Immigration Service</div>
       <div class="motto-text" id="resultMotto">กำลังโหลด...</div>
@@ -224,6 +235,8 @@
       <div class="stats-row"><span class="lbl">🔴 สาย</span><span class="count" id="resultStatRed">-</span></div>
       <div class="stats-flag-row stats-divider"><span>🟣 เช็กอินไม่สมบูรณ์</span><span class="count" id="resultStatPurple">-</span></div>
       <div class="stats-flag-row brown"><span>🟤 ขาดเช็กอิน</span><span class="count" id="resultStatAbsent">-</span></div>
+      <div class="stats-flag-row" style="color:#b45309;"><span>🥇 เป็นที่ 1 ของวัน</span><span class="count" id="resultStatGold">-</span></div>
+      <div class="stats-flag-row" style="color:#6b7280;"><span>🥈 เป็นที่ 2 ของวัน</span><span class="count" id="resultStatSilver">-</span></div>
       <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="resultStatTotal">-</span></div>
     </div>
 
@@ -257,6 +270,8 @@
     <div id="alreadyGpsWarning" class="warning-box hidden">⚠️ เช็กอินครั้งนั้นไม่ได้เปิด/อนุญาต GPS — ไม่มีข้อมูลระยะห่างให้หัวหน้าดู</div>
     <button class="btn-primary" id="btnDoneAlready">ตกลง</button>
 
+    <div id="alreadyMedalBox" class="medal-box hidden"></div>
+
     <div class="motto-box">
       <div class="motto-label">📢 Rayong Immigration Service</div>
       <div class="motto-text" id="alreadyMotto">กำลังโหลด...</div>
@@ -271,6 +286,8 @@
       <div class="stats-row"><span class="lbl">🔴 สาย</span><span class="count" id="alreadyStatRed">-</span></div>
       <div class="stats-flag-row stats-divider"><span>🟣 เช็กอินไม่สมบูรณ์</span><span class="count" id="alreadyStatPurple">-</span></div>
       <div class="stats-flag-row brown"><span>🟤 ขาดเช็กอิน</span><span class="count" id="alreadyStatAbsent">-</span></div>
+      <div class="stats-flag-row" style="color:#b45309;"><span>🥇 เป็นที่ 1 ของวัน</span><span class="count" id="alreadyStatGold">-</span></div>
+      <div class="stats-flag-row" style="color:#6b7280;"><span>🥈 เป็นที่ 2 ของวัน</span><span class="count" id="alreadyStatSilver">-</span></div>
       <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="alreadyStatTotal">-</span></div>
     </div>
 
@@ -823,6 +840,7 @@
     detail.classList.add("hidden");
     document.getElementById("alreadyGpsWarning").classList.add("hidden");
     document.getElementById("alreadyPurpleBadge").classList.add("hidden");
+    document.getElementById("alreadyMedalBox").className = "medal-box hidden";
 
     remarkState.already = { officerId: officerId, pin: pin };
     resetRemarkBox("already"); // ค่าเริ่มต้น เผื่อดึงสถานะไม่สำเร็จ — จะถูกแทนที่ด้วยของจริงถ้ามีหมายเหตุอยู่แล้วด้านล่าง
@@ -841,6 +859,7 @@
       badge.style.background = "";
       badge.textContent = s.emoji + " " + s.text + " (เช็กอินไปแล้ว)";
       document.getElementById("alreadyPurpleBadge").classList.toggle("hidden", !data.incomplete);
+      showMedalBadge("already", data.daily_rank);
 
       var t = new Date(data.time);
       document.getElementById("alreadyTime").textContent = t.toLocaleString("th-TH", {
@@ -864,6 +883,22 @@
 
     loadMotto("alreadyMotto");
     loadMyStats(officerId, pin, "already");
+  }
+
+  // ================= เหรียญทอง/เงิน — เช็กอินคนแรก/คนที่สองของวัน (P1b) =================
+  // prefix = "result" หรือ "already", rank = data.daily_rank (1, 2, หรือ null/undefined)
+  function showMedalBadge(prefix, rank){
+    var el = document.getElementById(prefix + "MedalBox");
+    if (!el) return;
+    if (rank === 1) {
+      el.textContent = "🥇 ยินดีด้วย! คุณเป็นคนแรกของวันนี้";
+      el.className = "medal-box gold";
+    } else if (rank === 2) {
+      el.textContent = "🥈 ยินดีด้วย! คุณเป็นคนที่สองของวันนี้";
+      el.className = "medal-box silver";
+    } else {
+      el.className = "medal-box hidden";
+    }
   }
 
   // ================= ม็อตโต้ + สถิติส่วนตัวรายเดือน (แสดงหลังเช็กอินเสร็จเท่านั้น) =================
@@ -896,6 +931,10 @@
       document.getElementById(prefix + "StatPurple").textContent = d.incomplete + " ครั้ง";
       var absentEl = document.getElementById(prefix + "StatAbsent");
       if (absentEl) absentEl.textContent = (d.absent || 0) + " ครั้ง";
+      var goldEl = document.getElementById(prefix + "StatGold");
+      if (goldEl) goldEl.textContent = (d.gold_count || 0) + " ครั้ง";
+      var silverEl = document.getElementById(prefix + "StatSilver");
+      if (silverEl) silverEl.textContent = (d.silver_count || 0) + " ครั้ง";
       document.getElementById(prefix + "StatTotal").textContent = d.total + " ครั้ง";
       // ถ้าแอดมินตั้งวันเริ่มนับของเดือนนี้ไว้ไม่ใช่วันที่ 1 ให้โชว์วงเล็บกำกับต่อท้ายป้ายเดือน
       if (monthLabelEl && d.count_start_date) {
@@ -1027,6 +1066,7 @@
 
     showScreen("result");
 
+    showMedalBadge("result", data.daily_rank);
     loadMotto("resultMotto");
     loadMyStats(data.officerId, data.pin, "result");
 
@@ -1045,6 +1085,7 @@
     geoStatus = "pending";
     pendingSubmit = null;
     document.getElementById("incompleteModal").classList.add("hidden");
+    document.getElementById("resultMedalBox").className = "medal-box hidden";
     showScreen("login");
     loadOfficers(); // โหลดใหม่ทุกครั้ง เผื่อหัวหน้าเพิ่งกดรีเซ็ต PIN ให้ใครไป
   }

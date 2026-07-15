@@ -162,7 +162,7 @@
     #officersTableWrap table td:nth-child(8)::before{content:"วันทำงาน";}
     #officersTableWrap table td:nth-child(9)::before{content:"กลุ่มงาน";}
 
-    /* จุดบริการกลุ่มงาน OT */
+    /* แผนกงานการให้บริการ */
     #teamCoverageWrap table td:nth-child(1)::before{content:"กลุ่มงาน";}
     #teamCoverageWrap table td:nth-child(2)::before{content:"สถานะ";}
     #teamCoverageWrap table td:nth-child(3)::before{content:"สมาชิก";}
@@ -261,7 +261,7 @@
       </div>
 
       <div class="card">
-        <h2>🤝 จุดบริการกลุ่มงาน OT</h2>
+        <h2>🤝 แผนกงานการให้บริการ</h2>
         <p class="sub" style="margin:0 0 12px;">ทีมงานธุรกิจ/ครอบครัว (ปกติ 2 คน/กลุ่ม ที่มัก OT ดึกเป็นประจำ) — เช็กว่ามีอย่างน้อย 1 คนในทีมมาปฏิบัติงานแล้วหรือยัง ไม่กระทบสีเช็กอินรายบุคคลของใครเลย จัดการกลุ่มงาน (สร้าง/แก้/ลบ) ทำได้เฉพาะที่แดชบอร์ดของชวนชัยเท่านั้น</p>
         <div id="teamCoverageWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
@@ -755,6 +755,8 @@
       var name = getName(r);
       var purpleTag = r.incomplete_checkin ? ' <span class="badge purple">🟣 ไม่สมบูรณ์</span>' : '';
       var holdTag = r.retention_hold ? ' <span class="badge gray">🔒 กันลบรูป</span>' : '';
+      var medalTag = r.daily_rank === 1 ? ' <span class="badge gray" style="background:#d97706;">🥇 คนแรก</span>'
+        : r.daily_rank === 2 ? ' <span class="badge gray" style="background:#9ca3af;">🥈 คนที่สอง</span>' : '';
       var overrideByName = getOverrideByName(r);
       var hasOverride = !!(r.override_status || r.override_reason);
       var overrideInfo = hasOverride
@@ -777,7 +779,7 @@
         dateStr +
         '<td>' + escapeHtml(name) + '</td>' +
         '<td>' + timeStr + '</td>' +
-        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + overrideInfo + '</td>' +
+        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + medalTag + overrideInfo + '</td>' +
         '<td>' + distStr + '</td>' +
         '<td>' + readyStr + '</td>' +
         '<td class="note-cell">' + escapeHtml(r.note || "-") + '</td>' +
@@ -1061,7 +1063,7 @@
     exportRowsToExcel(lastHistRows, "checkin-history-" + start + "_to_" + end + ".xlsx");
   });
 
-  // ================= 🤝 จุดบริการกลุ่มงาน OT (P1a, อ่านอย่างเดียว — จัดการกลุ่มทำที่ dashboard.html เท่านั้น) =================
+  // ================= 🤝 แผนกงานการให้บริการ (P1a, อ่านอย่างเดียว — จัดการกลุ่มทำที่ dashboard.html เท่านั้น) =================
   var TEAM_BADGE_MAP = {
     ok:      { cls: "green",  emoji: "🟢", text: "มาแล้ว" },
     warn:    { cls: "orange", emoji: "🟠", text: "มาช้า" },
