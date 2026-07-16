@@ -86,6 +86,14 @@
   .medal-box.gold{background:linear-gradient(135deg,#fde68a,#d97706); color:#78350f;}
   .medal-box.silver{background:linear-gradient(135deg,#f3f4f6,#9ca3af); color:#1f2937;}
 
+  /* ป้ายระดับเช็คเอาต์ตอนเย็น (P1.4) — อยู่เย็น/อยู่ดึก */
+  .tier-badge{
+    margin-top:16px; padding:14px 18px; border-radius:14px;
+    text-align:center; font-weight:800; font-size:16px; color:#fff;
+    background:linear-gradient(135deg,#4338ca,#1e1b4b);
+    box-shadow:0 4px 12px rgba(0,0,0,.15);
+  }
+
   .stats-box{
     margin-top:16px; padding:20px 18px; border-radius:16px;
     background:#ecfdf5; border:1px solid #a7f3d0;
@@ -155,12 +163,13 @@
     <div id="loginError" class="error-box hidden"></div>
 
     <button class="btn-primary" id="btnStartCamera">เปิดกล้องเพื่อเช็กอิน</button>
+    <button class="btn-secondary" id="btnStartCheckout">🌙 เช็คเอาต์ตอนเย็น (ไม่บังคับ)</button>
     <p class="hint">ลืมรหัส PIN? ให้หัวหน้ากด "รีเซ็ต PIN" ในแดชบอร์ด แล้วมาตั้งใหม่ได้ที่นี่</p>
   </section>
 
-  <!-- 3) หน้ากล้องสด -->
+  <!-- 3) หน้ากล้องสด (ใช้ร่วมกันทั้งเช็กอินเช้าและเช็คเอาต์เย็น) -->
   <section id="screen-camera" class="card hidden">
-    <h1>ถ่ายรูปเช็กอิน</h1>
+    <h1 id="cameraTitle">ถ่ายรูปเช็กอิน</h1>
     <p class="sub">จัดหน้าให้อยู่ในกรอบ แล้วกดถ่าย</p>
     <video id="video" autoplay playsinline muted class="mirror"></video>
     <canvas id="canvas"></canvas>
@@ -305,6 +314,51 @@
     </div>
   </section>
 
+  <!-- 6) เช็คเอาต์ตอนเย็น (P1.4, ไม่บังคับ): หน้ายืนยันก่อนส่ง -->
+  <section id="screen-checkout-confirm" class="card hidden">
+    <h1>ยืนยันเช็คเอาต์ตอนเย็น</h1>
+    <img id="checkoutPhotoPreview" alt="รูปที่ถ่าย">
+    <p class="hint" id="checkoutConfirmGeoHint">กำลังตรวจสอบสถานะ GPS...</p>
+
+    <label for="checkoutNoteInput">หมายเหตุ (ไม่บังคับ)</label>
+    <textarea id="checkoutNoteInput" placeholder="เช่น อยู่ต่อช่วยงาน OT, ประชุมยาว ฯลฯ"></textarea>
+    <div id="checkoutNoteCharCount" class="char-count">0 ตัวอักษร (ไม่บังคับ)</div>
+
+    <div id="checkoutConfirmError" class="error-box hidden"></div>
+    <button class="btn-primary" id="btnConfirmCheckout">ยืนยันเช็คเอาต์</button>
+    <button class="btn-secondary" id="btnRetakeCheckout">ถ่ายใหม่</button>
+    <button class="btn-secondary" id="btnCancelCheckoutConfirm">ยกเลิก</button>
+  </section>
+
+  <!-- กำลังส่งข้อมูลเช็คเอาต์ -->
+  <section id="screen-checkout-loading" class="card hidden center">
+    <div class="spinner"></div>
+    <p>กำลังบันทึกเช็คเอาต์...</p>
+  </section>
+
+  <!-- 7) เช็คเอาต์สำเร็จ -->
+  <section id="screen-checkout-result" class="card hidden center">
+    <div id="checkoutResultTierBadge" class="tier-badge hidden"></div>
+    <p id="checkoutResultNoTierMsg" class="hint hidden">บันทึกเช็คเอาต์เรียบร้อย (ยังไม่ถึงเวลาที่ได้รับป้ายพิเศษ)</p>
+    <div style="text-align:left; margin-top:8px;">
+      <div class="result-row"><span>ชื่อ</span><span id="checkoutResOfficer">-</span></div>
+      <div class="result-row"><span>เวลาที่ระบบบันทึก</span><span id="checkoutResTime">-</span></div>
+      <div class="result-row"><span>ระยะห่างที่ทำงาน</span><span id="checkoutResDistance">-</span></div>
+    </div>
+    <button class="btn-primary" id="btnDoneCheckout">เสร็จสิ้น</button>
+  </section>
+
+  <!-- เช็คเอาต์ไปแล้ววันนี้ (ล็อกครั้งเดียวต่อวัน ไม่ให้กดซ้ำ) -->
+  <section id="screen-checkout-already" class="card hidden center">
+    <div id="checkoutAlreadyTierBadge" class="tier-badge hidden"></div>
+    <p id="checkoutAlreadyNoTierMsg" class="hint hidden">คุณเช็คเอาต์ไปแล้ววันนี้</p>
+    <p>คุณได้เช็คเอาต์ไปแล้วสำหรับวันนี้ เช็คเอาต์ได้เพียงครั้งเดียวต่อวัน</p>
+    <div style="text-align:left; margin-top:8px;">
+      <div class="result-row"><span>เวลาที่เช็คเอาต์ไว้</span><span id="checkoutAlreadyTime">-</span></div>
+    </div>
+    <button class="btn-primary" id="btnDoneCheckoutAlready">ตกลง</button>
+  </section>
+
 </div>
 
 <!-- โมดัลยืนยันเช็กอินไม่สมบูรณ์ (สีม่วง) -->
@@ -338,7 +392,11 @@
     confirm: document.getElementById("screen-confirm"),
     loading: document.getElementById("screen-loading"),
     result: document.getElementById("screen-result"),
-    already: document.getElementById("screen-already")
+    already: document.getElementById("screen-already"),
+    checkoutConfirm: document.getElementById("screen-checkout-confirm"),
+    checkoutLoading: document.getElementById("screen-checkout-loading"),
+    checkoutResult: document.getElementById("screen-checkout-result"),
+    checkoutAlready: document.getElementById("screen-checkout-already")
   };
   function showScreen(name){
     Object.keys(screens).forEach(function(k){ screens[k].classList.add("hidden"); });
@@ -364,6 +422,17 @@
   var readyRadios = document.querySelectorAll('input[name="readyStatus"]');
   var readyOptionYes = document.getElementById("readyOptionYes");
   var readyOptionNo = document.getElementById("readyOptionNo");
+  var cameraTitle = document.getElementById("cameraTitle");
+  var btnStartCheckout = document.getElementById("btnStartCheckout");
+  var checkoutPhotoPreview = document.getElementById("checkoutPhotoPreview");
+  var checkoutConfirmGeoHint = document.getElementById("checkoutConfirmGeoHint");
+  var checkoutNoteInput = document.getElementById("checkoutNoteInput");
+  var checkoutNoteCharCount = document.getElementById("checkoutNoteCharCount");
+  var checkoutConfirmError = document.getElementById("checkoutConfirmError");
+
+  checkoutNoteInput.addEventListener("input", function(){
+    checkoutNoteCharCount.textContent = checkoutNoteInput.value.trim().length + " ตัวอักษร (ไม่บังคับ)";
+  });
 
   // นับความยาวหมายเหตุแบบสด ๆ + ไฮไลต์ radio ที่เลือก
   noteInput.addEventListener("input", function(){
@@ -402,6 +471,10 @@
   var geoRequested = false;
   var geoStatus = "pending"; // "pending" | "ok" | "denied" | "unsupported" — ใช้แสดงผลในหน้าตรวจสอบก่อนยืนยันด้วย
   var currentFacingMode = "user"; // ผู้ใช้สลับได้ระหว่าง "user" (หน้า) กับ "environment" (หลัง)
+  // (P1.4) เช็คเอาต์ตอนเย็น — ใช้กล้อง/GPS ร่วมกับเช็กอินเช้า แยกแค่ flag นี้กับ RPC ปลายทาง
+  var checkoutMode = false;
+  var pendingCheckoutOfficerId = null;
+  var pendingCheckoutPin = null;
 
   // ================= 1) Consent =================
   function initConsent(){
@@ -472,6 +545,8 @@
   // ================= 3) เปิดกล้องสด (getUserMedia เท่านั้น — ห้าม input file) =================
   document.getElementById("btnStartCamera").addEventListener("click", function(){
     loginError.classList.add("hidden");
+    checkoutMode = false;
+    cameraTitle.textContent = "ถ่ายรูปเช็กอิน";
     var officerId = officerSelect.value;
     if (!officerId) { showLoginError("กรุณาเลือกชื่อเจ้าหน้าที่"); return; }
 
@@ -526,6 +601,81 @@
     loginError.classList.remove("hidden");
   }
 
+  // ================= (P1.4) เช็คเอาต์ตอนเย็น — ไม่บังคับ, กดตอนไหนก็ได้ แยก flow จากเช็กอินเช้า =================
+  // hard block: ต้องเช็กอินเช้าของวันนั้นแล้วเท่านั้นถึงจะเช็คเอาต์ได้ + ล็อกได้ครั้งเดียวต่อวัน (ไม่ให้กดซ้ำ)
+  // เช็กสถานะทั้งสองอย่างนี้ "ก่อน" เปิดกล้องเสมอ กันเสียเวลาถ่ายรูปฟรี + กันรูปกำพร้าใน Storage (แพทเทิร์นเดียวกับข้อ 24)
+  btnStartCheckout.addEventListener("click", function(){
+    loginError.classList.add("hidden");
+    var officerId = officerSelect.value;
+    if (!officerId) { showLoginError("กรุณาเลือกชื่อเจ้าหน้าที่"); return; }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showLoginError("อุปกรณ์นี้ไม่รองรับกล้อง หรือหน้านี้ไม่ได้เปิดผ่าน HTTPS");
+      return;
+    }
+
+    var o = officersById[officerId];
+    if (o && o.needs_pin_setup) {
+      showLoginError("ยังไม่เคยตั้งรหัส PIN — กรุณาเช็กอินเช้าก่อน (ตั้ง PIN ครั้งแรกตอนเช็กอิน) แล้วค่อยกลับมาเช็คเอาต์ตอนเย็น");
+      return;
+    }
+    var pin = pinInput.value.trim();
+    if (!pin) { showLoginError("กรุณาใส่รหัส PIN"); return; }
+
+    btnStartCheckout.disabled = true;
+    sb.rpc("do_get_today_status", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      btnStartCheckout.disabled = false;
+      if (res.error || !res.data) {
+        proceedToCheckoutCamera(officerId, pin); // เรียกไม่สำเร็จ (เน็ตหลุด ฯลฯ) — fail-open ให้ do_check_out ตัดสินสุดท้ายเอง
+        return;
+      }
+      var pre = res.data;
+      if (pre.error === "pin_locked") { showLoginError(formatPinLockedMessage(pre.locked_until)); return; }
+      if (pre.error === "bad_pin") { showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่"); return; }
+      if (pre.error === "officer_not_found") { showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน"); return; }
+      if (pre.error === "not_checked_in") {
+        showLoginError("ต้องเช็กอินเช้าก่อนถึงจะเช็คเอาต์ได้ กรุณาเช็กอินก่อน แล้วค่อยกลับมาเช็คเอาต์ตอนเย็น");
+        return;
+      }
+      checkCheckoutStatusThenProceed(officerId, pin); // เช็กอินแล้ว (หรือ error code อื่นที่ไม่รู้จัก) — เช็กสถานะเช็คเอาต์ต่อ
+    }).catch(function(){
+      btnStartCheckout.disabled = false;
+      proceedToCheckoutCamera(officerId, pin);
+    });
+  });
+
+  function checkCheckoutStatusThenProceed(officerId, pin){
+    sb.rpc("do_get_my_checkout_today", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        proceedToCheckoutCamera(officerId, pin);
+        return;
+      }
+      if (res.data.checked_out === true) {
+        showCheckoutAlready(res.data); // เช็คเอาต์ไปแล้ววันนี้ — ล็อกครั้งเดียว ไม่เปิดกล้องซ้ำ
+      } else {
+        proceedToCheckoutCamera(officerId, pin);
+      }
+    }).catch(function(){
+      proceedToCheckoutCamera(officerId, pin);
+    });
+  }
+
+  function proceedToCheckoutCamera(officerId, pin){
+    checkoutMode = true;
+    pendingCheckoutOfficerId = officerId;
+    pendingCheckoutPin = pin;
+    cameraTitle.textContent = "ถ่ายรูปเช็คเอาต์";
+    openCamera(currentFacingMode)
+      .then(function(){
+        showScreen("camera");
+        requestGeoNonBlocking();
+      })
+      .catch(function(err){
+        checkoutMode = false;
+        showLoginError("เปิดกล้องไม่สำเร็จ: กรุณาอนุญาตการเข้าถึงกล้อง แล้วลองใหม่ (" + err.message + ")");
+      });
+  }
+
   // (10 ก.ค. 2569) P0.3 PIN rate limiting — กรอก PIN ผิดครบ 5 ครั้งจะล็อกชั่วคราว 15 นาที
   // แปลง error code "pin_locked" + locked_until (timestamp จาก server) เป็นข้อความไทยที่อ่านง่าย
   function formatPinLockedMessage(lockedUntil){
@@ -572,14 +722,20 @@
   // geoStatus ใช้แสดงผลทั้งในหน้ากล้อง (geoHint) และหน้าตรวจสอบก่อนยืนยัน (confirmGeoHint)
   function geoStatusText(){
     if (geoStatus === "ok") return "🟢 ได้พิกัด GPS แล้ว";
-    if (geoStatus === "denied") return "🔴 ไม่ได้เปิด/อนุญาต GPS — จะบันทึกเป็น \"เช็กอินไม่สมบูรณ์\" (สีม่วง)";
-    if (geoStatus === "unsupported") return "⚪ อุปกรณ์นี้ไม่รองรับ GPS — เช็กอินได้ตามปกติ";
+    if (geoStatus === "denied") {
+      // เช็คเอาต์เย็น (P1.4): GPS ไม่บล็อก/ไม่มีสถานะม่วง ต่างจากเช็กอินเช้า — ข้อความจึงต่างกัน
+      return checkoutMode
+        ? "🔴 ไม่ได้เปิด/อนุญาต GPS — ระบบจะยังบันทึกเช็คเอาต์ให้ตามปกติ"
+        : "🔴 ไม่ได้เปิด/อนุญาต GPS — จะบันทึกเป็น \"เช็กอินไม่สมบูรณ์\" (สีม่วง)";
+    }
+    if (geoStatus === "unsupported") return "⚪ อุปกรณ์นี้ไม่รองรับ GPS — เช็กอิน/เช็คเอาต์ได้ตามปกติ";
     return "🟡 กำลังขอพิกัด GPS...";
   }
   function refreshGeoHints(){
     var text = geoStatusText();
     if (geoHint) geoHint.textContent = text;
     if (confirmGeoHint) confirmGeoHint.textContent = text;
+    if (checkoutConfirmGeoHint) checkoutConfirmGeoHint.textContent = text;
   }
   function requestGeoNonBlocking(){
     if (geoRequested) return;
@@ -614,6 +770,7 @@
 
   document.getElementById("btnCancelCamera").addEventListener("click", function(){
     stopCamera();
+    checkoutMode = false;
     showScreen("login");
   });
 
@@ -627,23 +784,32 @@
     ctx.drawImage(video, 0, 0, w, h);
     canvas.toBlob(function(blob){
       capturedBlob = blob;
-      photoPreview.src = URL.createObjectURL(blob);
       stopCamera();
-      confirmError.classList.add("hidden");
-      showScreen("confirm");
+      if (checkoutMode) {
+        checkoutPhotoPreview.src = URL.createObjectURL(blob);
+        checkoutConfirmError.classList.add("hidden");
+        showScreen("checkoutConfirm");
+      } else {
+        photoPreview.src = URL.createObjectURL(blob);
+        confirmError.classList.add("hidden");
+        showScreen("confirm");
+      }
       refreshGeoHints(); // อัปเดตสถานะ GPS ให้ทันสถานะล่าสุดตอนเข้าหน้าตรวจสอบก่อนยืนยัน
     }, "image/jpeg", 0.85);
   });
 
-  document.getElementById("btnRetake").addEventListener("click", function(){
+  function retakePhoto(){
     capturedBlob = null;
     openCamera(currentFacingMode)
       .then(function(){ showScreen("camera"); })
       .catch(function(err){
+        checkoutMode = false;
         showScreen("login");
         showLoginError("เปิดกล้องไม่สำเร็จ: " + err.message);
       });
-  });
+  }
+  document.getElementById("btnRetake").addEventListener("click", retakePhoto);
+  document.getElementById("btnRetakeCheckout").addEventListener("click", retakePhoto);
 
   // ================= 5) ยืนยันเช็กอิน: เช็กระยะทาง/GPS ก่อน -> (อาจเด้งยืนยันม่วง) -> upload รูป -> เรียก RPC do_check_in =================
   var pendingSubmit = null; // {officerId, pin, note, ready} รอส่งจริงหลังผ่านเช็กม่วงแล้ว
@@ -826,6 +992,132 @@
     else if (code === "officer_not_found") showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน");
     else showLoginError("เช็กอินไม่สำเร็จ: " + code);
   }
+
+  // ================= (P1.4) เช็คเอาต์ตอนเย็น: ยกเลิก/ยืนยันส่งจริง =================
+  document.getElementById("btnCancelCheckoutConfirm").addEventListener("click", function(){
+    checkoutMode = false;
+    capturedBlob = null;
+    showScreen("login");
+  });
+
+  document.getElementById("btnConfirmCheckout").addEventListener("click", function(){
+    if (!capturedBlob) return;
+    var officerId = pendingCheckoutOfficerId;
+    var pin = pendingCheckoutPin;
+    var note = checkoutNoteInput.value.trim();
+    checkoutConfirmError.classList.add("hidden");
+    doSubmitCheckout(officerId, pin, note);
+  });
+
+  function doSubmitCheckout(officerId, pin, note){
+    showScreen("checkoutLoading");
+    var todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD สำหรับตั้งชื่อไฟล์เท่านั้น
+    var fileName = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+    var path = officerId + "/" + todayStr + "/checkout_" + fileName + ".jpg"; // ใช้ bucket เดิม เติม prefix "checkout_" แยกจากรูปเช็กอินเช้า
+    var lat = geoResult ? geoResult.lat : null;
+    var lng = geoResult ? geoResult.lng : null;
+
+    sb.storage.from("checkin-photos").upload(path, capturedBlob, { contentType: "image/jpeg" })
+      .then(function(uploadRes){
+        if (uploadRes.error) {
+          showScreen("checkoutConfirm");
+          checkoutConfirmError.textContent = "อัปโหลดรูปไม่สำเร็จ: " + uploadRes.error.message + " กรุณาลองใหม่";
+          checkoutConfirmError.classList.remove("hidden");
+          return null;
+        }
+        return sb.rpc("do_check_out", {
+          p_officer_id: officerId, p_pin: pin, p_photo_path: path, p_lat: lat, p_lng: lng, p_note: note
+        });
+      })
+      .then(function(rpcRes){
+        if (!rpcRes) return; // upload ล้มเหลวไปแล้ว จบตรงนี้
+        if (rpcRes.error) {
+          showScreen("checkoutConfirm");
+          checkoutConfirmError.textContent = "เช็คเอาต์ไม่สำเร็จ: " + rpcRes.error.message;
+          checkoutConfirmError.classList.remove("hidden");
+          return;
+        }
+        var data = rpcRes.data;
+        if (!data || data.ok !== true) {
+          handleCheckoutError(data, officerId, pin);
+          return;
+        }
+        data.officerId = officerId;
+        showCheckoutResult(data);
+      })
+      .catch(function(err){
+        showScreen("checkoutConfirm");
+        checkoutConfirmError.textContent = "เกิดข้อผิดพลาด: " + err.message;
+        checkoutConfirmError.classList.remove("hidden");
+      });
+  }
+
+  function handleCheckoutError(data, officerId, pin){
+    var code = data ? data.error : "unknown";
+    if (code === "already_checked_out") {
+      // race condition (เช่นกดจากสองแท็บ) — ดึงข้อมูลของจริงมาโชว์แทน
+      sb.rpc("do_get_my_checkout_today", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+        if (res.data && res.data.ok === true && res.data.checked_out === true) {
+          showCheckoutAlready(res.data);
+        } else {
+          showCheckoutAlready({ checked_out: true, time: null, tier_order: null });
+        }
+      });
+      return;
+    }
+    if (code === "not_checked_in_yet") {
+      checkoutMode = false;
+      showScreen("login");
+      showLoginError("ต้องเช็กอินเช้าก่อนถึงจะเช็คเอาต์ได้ กรุณาเช็กอินก่อน แล้วค่อยกลับมาเช็คเอาต์ตอนเย็น");
+      return;
+    }
+    checkoutMode = false;
+    showScreen("login");
+    if (code === "pin_locked") showLoginError(formatPinLockedMessage(data.locked_until));
+    else if (code === "bad_pin") showLoginError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
+    else if (code === "officer_not_found") showLoginError("ไม่พบเจ้าหน้าที่คนนี้ในระบบ หรือถูกปิดใช้งาน");
+    else showLoginError("เช็คเอาต์ไม่สำเร็จ: " + code);
+  }
+
+  function renderTierBadge(prefix, data){
+    var tierBadge = document.getElementById(prefix + "TierBadge");
+    var noTierMsg = document.getElementById(prefix + "NoTierMsg");
+    if (data.tier_order) {
+      tierBadge.textContent = (data.tier_emoji || "🌙") + " " + data.tier_label;
+      tierBadge.className = "tier-badge";
+      noTierMsg.classList.add("hidden");
+    } else {
+      tierBadge.className = "tier-badge hidden";
+      noTierMsg.classList.remove("hidden");
+    }
+  }
+
+  function showCheckoutResult(data){
+    renderTierBadge("checkoutResult", data);
+    document.getElementById("checkoutResOfficer").textContent = officerSelect.options[officerSelect.selectedIndex].text;
+    var serverTime = new Date(data.time);
+    document.getElementById("checkoutResTime").textContent = serverTime.toLocaleString("th-TH", {
+      timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "medium"
+    });
+    var noGps = (data.distance_m === null || data.distance_m === undefined);
+    document.getElementById("checkoutResDistance").textContent = noGps ? "ไม่ทราบ (ไม่ได้เปิด GPS)" : ("~" + data.distance_m + " เมตร");
+    showScreen("checkoutResult");
+  }
+
+  function showCheckoutAlready(data){
+    renderTierBadge("checkoutAlready", data);
+    var timeEl = document.getElementById("checkoutAlreadyTime");
+    if (data.time) {
+      var t = new Date(data.time);
+      timeEl.textContent = t.toLocaleString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "medium" });
+    } else {
+      timeEl.textContent = "-";
+    }
+    showScreen("checkoutAlready");
+  }
+
+  document.getElementById("btnDoneCheckout").addEventListener("click", resetForm);
+  document.getElementById("btnDoneCheckoutAlready").addEventListener("click", resetForm);
 
   // เช็กอินซ้ำ: ดึงสถานะที่บันทึกไว้ของวันนี้มาแสดงไฟจราจรจริง แทนข้อความเฉยๆ
   function showAlreadyCheckedIn(){
@@ -1086,6 +1378,13 @@
     pendingSubmit = null;
     document.getElementById("incompleteModal").classList.add("hidden");
     document.getElementById("resultMedalBox").className = "medal-box hidden";
+    // (P1.4) รีเซ็ต state เช็คเอาต์ตอนเย็นกลับสภาพเดิมทุกครั้งที่กลับไปหน้า login
+    checkoutMode = false;
+    pendingCheckoutOfficerId = null;
+    pendingCheckoutPin = null;
+    cameraTitle.textContent = "ถ่ายรูปเช็กอิน";
+    checkoutNoteInput.value = "";
+    checkoutNoteCharCount.textContent = "0 ตัวอักษร (ไม่บังคับ)";
     showScreen("login");
     loadOfficers(); // โหลดใหม่ทุกครั้ง เผื่อหัวหน้าเพิ่งกดรีเซ็ต PIN ให้ใครไป
   }

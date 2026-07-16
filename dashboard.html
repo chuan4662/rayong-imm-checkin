@@ -122,6 +122,7 @@
     #todayTableWrap table td:nth-child(6)::before{content:"หมายเหตุ";}
     #todayTableWrap table td:nth-child(7)::before{content:"หมายเหตุเพิ่มเติม";}
     #todayTableWrap table td:nth-child(8)::before{content:"รูป";}
+    #todayTableWrap table td:nth-child(9)::before{content:"🌙 เช็คเอาต์";}
 
     /* ประวัติย้อนหลัง (มีคอลัมน์วันที่นำหน้า) */
     #histTableWrap table td:nth-child(1)::before{content:"วันที่";}
@@ -133,6 +134,7 @@
     #histTableWrap table td:nth-child(7)::before{content:"หมายเหตุ";}
     #histTableWrap table td:nth-child(8)::before{content:"หมายเหตุเพิ่มเติม";}
     #histTableWrap table td:nth-child(9)::before{content:"รูป";}
+    #histTableWrap table td:nth-child(10)::before{content:"🌙 เช็คเอาต์";}
 
     /* วันนี้แจ้งไม่พร้อม */
     #notReadyWrap table td:nth-child(1)::before{content:"ชื่อ";}
@@ -646,7 +648,7 @@
       new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day:"numeric", month:"long", year:"numeric" });
 
     sb.from("check_in")
-      .select("id, checked_in_at, status, override_status, distance_m, ready_for_duty, note, remark, photo_path, incomplete_checkin, override_reason, override_at, retention_hold, photo_deleted_at, daily_rank, officer!check_in_officer_id_fkey(full_name, rank_title, nickname), override_by_officer:officer!check_in_override_by_fkey(full_name)")
+      .select("id, officer_id, checked_in_at, status, override_status, distance_m, ready_for_duty, note, remark, photo_path, incomplete_checkin, override_reason, override_at, retention_hold, photo_deleted_at, daily_rank, officer!check_in_officer_id_fkey(full_name, rank_title, nickname), override_by_officer:officer!check_in_override_by_fkey(full_name)")
       .eq("local_date", todayStr)
       .order("checked_in_at", { ascending: true })
       .then(function(res){
@@ -656,6 +658,27 @@
           return;
         }
         var rows = res.data || [];
+        // (P1.4) ดึงเช็คเอาต์ของวันนี้แยกอีกคิวรี (คนละตาราง) แล้วผูกเข้ากับแถวเช็กอินด้วย officer_id ฝั่ง client
+        sb.from("check_out")
+          .select("officer_id, checked_out_at, tier_label, tier_emoji")
+          .eq("local_date", todayStr)
+          .then(function(coRes){
+            var checkoutByOfficer = {};
+            (coRes.data || []).forEach(function(co){ checkoutByOfficer[co.officer_id] = co; });
+            rows.forEach(function(r){
+              var co = checkoutByOfficer[r.officer_id];
+              if (co) {
+                r.checked_out_at = co.checked_out_at;
+                r.tier_label = co.tier_label;
+                r.tier_emoji = co.tier_emoji;
+              }
+            });
+            renderTodayTable(rows);
+          });
+      });
+
+    function renderTodayTable(rows){
+        var wrap = document.getElementById("todayTableWrap");
         var getTodayName = function(r){ return r.officer ? (r.officer.full_name + (r.officer.nickname ? " (" + r.officer.nickname + ")" : "")) : "-"; };
         lastTodayRows = rows.map(function(r){
           return {
@@ -667,7 +690,9 @@
             note: r.note || "",
             remark: r.remark || "",
             override_by: r.override_by_officer ? r.override_by_officer.full_name : "",
-            override_reason: r.override_reason || ""
+            override_reason: r.override_reason || "",
+            checkout_time: r.checked_out_at ? new Date(r.checked_out_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }) : "",
+            checkout_tier: r.tier_label || ""
           };
         });
         renderNotReadyAlert(rows, getTodayName);
@@ -696,7 +721,7 @@
         });
         attachRetentionButtons(wrap, loadTodayCheckins);
         attachRemarkToggles(wrap);
-      });
+    }
   }
 
   // ================= ตัดข้อความหมายเหตุเพิ่มเติมที่ยาวเกินไปในตาราง + ปุ่มอ่านเพิ่มเติม =================
@@ -748,7 +773,7 @@
   function renderCheckinTable(rows, getName, getOverrideByName, showDate){
     var dateHeader = showDate ? '<th>วันที่</th>' : '';
     var html = '<table><thead><tr>' +
-      dateHeader + '<th>ชื่อ</th><th>เวลา</th><th>สถานะ</th><th>ระยะห่าง</th><th>ความพร้อม</th><th>หมายเหตุ</th><th>หมายเหตุเพิ่มเติม</th><th>รูป</th><th></th>' +
+      dateHeader + '<th>ชื่อ</th><th>เวลา</th><th>สถานะ</th><th>ระยะห่าง</th><th>ความพร้อม</th><th>หมายเหตุ</th><th>หมายเหตุเพิ่มเติม</th><th>รูป</th><th>🌙 เช็คเอาต์</th><th></th>' +
       '</tr></thead><tbody>';
     rows.forEach(function(r){
       var eff = r.override_status || r.status;
@@ -782,6 +807,14 @@
       var retentionBtnLabel = r.retention_hold ? "🔓 ปลดล็อกรูป" : "🔒 กันลบรูป";
       var retentionBtn = r.photo_deleted_at ? '' :
         (' <button class="btn-row-action" data-retention="' + r.id + '" data-hold="' + (r.retention_hold ? "0" : "1") + '" data-name="' + escapeHtml(name) + '">' + retentionBtnLabel + '</button>');
+      // (P1.4) เช็คเอาต์ตอนเย็น — ไม่บังคับ, มีข้อมูลเฉพาะคนที่กดเช็คเอาต์เท่านั้น
+      var checkoutCell;
+      if (r.checked_out_at) {
+        var coTimeStr = new Date(r.checked_out_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok", hour:"2-digit", minute:"2-digit" });
+        checkoutCell = coTimeStr + (r.tier_label ? (' <span class="badge gray">' + (r.tier_emoji || "🌙") + ' ' + escapeHtml(r.tier_label) + '</span>') : '');
+      } else {
+        checkoutCell = '<span class="muted">-</span>';
+      }
       html += '<tr>' +
         dateStr +
         '<td>' + escapeHtml(name) + '</td>' +
@@ -792,6 +825,7 @@
         '<td class="note-cell">' + escapeHtml(r.note || "-") + '</td>' +
         '<td class="note-cell">' + renderRemarkCell(r.remark) + '</td>' +
         '<td>' + photoCell + '</td>' +
+        '<td style="white-space:nowrap;">' + checkoutCell + '</td>' +
         '<td style="white-space:nowrap;"><button class="btn-row-action" data-override="' + r.id + '" data-name="' + escapeHtml(name) + '">แก้ไขสถานะ</button>' + retentionBtn + '</td>' +
         '</tr>';
     });
