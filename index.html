@@ -200,7 +200,6 @@
     <label for="noteInput">หมายเหตุประจำวัน (บังคับ อย่างน้อย 5 ตัวอักษร)</label>
     <textarea id="noteInput" placeholder="เช่น คนมารอเยอะ, ไฟดับ, เป้าหมายวันนี้, ไปราชการ ฯลฯ"></textarea>
     <div id="noteCharCount" class="char-count">0 ตัวอักษร</div>
-    <button type="button" class="btn-secondary" id="btnQuickNoteNormal">⚡ ปฏิบัติงานปกติ (กรอกให้อัตโนมัติ)</button>
 
     <div id="confirmError" class="error-box hidden"></div>
     <button class="btn-primary" id="btnConfirmCheckin">ยืนยันเช็กอิน</button>
@@ -439,11 +438,6 @@
     var len = noteInput.value.trim().length;
     noteCharCount.textContent = len + " ตัวอักษร (ต้องการอย่างน้อย 5 ตัวอักษร)";
     noteCharCount.classList.toggle("ok", len >= 5);
-  });
-  // ปุ่มลัดหมายเหตุ "ปฏิบัติงานปกติ" — กรอกข้อความให้อัตโนมัติ ลดปัญหาคนรีบพิมพ์ขยะให้ครบ 5 ตัวอักษร
-  document.getElementById("btnQuickNoteNormal").addEventListener("click", function(){
-    noteInput.value = "ปฏิบัติงานปกติ";
-    noteInput.dispatchEvent(new Event("input"));
   });
   readyRadios.forEach(function(r){
     r.addEventListener("change", function(){
