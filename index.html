@@ -122,6 +122,22 @@
   .remark-msg{font-size:13px; margin-top:8px;}
   .remark-msg.err{color:#991b1b;}
   .remark-msg.ok{color:var(--green);}
+  /* แบนเนอร์น้องริมมี่ (Rimmi for Officer) — โค้ดต้นฉบับ กู้จาก Netlify deploy 6a5c52a9 */
+  .rimmi-promo { position: relative; display: block; min-height: 194px; margin: 18px 0px 24px; overflow: hidden; border-radius: 22px; border: 1.5px solid rgb(200, 157, 60); color: rgb(255, 255, 255); text-decoration: none; background: radial-gradient(circle at 84% 48%, rgba(245, 189, 67, 0.25), transparent 27%), linear-gradient(130deg, rgb(4, 26, 58) 0%, rgb(6, 43, 89) 58%, rgb(3, 24, 50) 100%); box-shadow: rgba(2, 20, 45, 0.2) 0px 15px 32px; isolation: isolate; }
+  .rimmi-promo::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(227, 174, 62, 0.7); border-radius: 16px; pointer-events: none; }
+  .rimmi-promo::after { content: ""; position: absolute; width: 240px; height: 240px; right: -88px; top: -92px; border: 1px solid rgba(244, 190, 74, 0.25); border-radius: 50%; box-shadow: rgba(244, 190, 74, 0.14) 0px 0px 35px; }
+  .promo-copy { position: relative; z-index: 2; width: 65%; padding: 25px 0px 22px 24px; }
+  .promo-eyebrow { font-family: Georgia, serif; font-size: 12px; letter-spacing: 1.2px; color: rgb(230, 185, 79); font-weight: 700; }
+  .promo-title { font-size: 22px; line-height: 1.28; font-weight: 800; margin-top: 10px; text-shadow: rgba(0, 0, 0, 0.2) 0px 2px 8px; }
+  .promo-desc { font-size: 12.5px; line-height: 1.45; color: rgb(125, 211, 252); margin-top: 8px; }
+  .promo-action { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 10px 14px; border: 1px solid rgb(231, 182, 78); border-radius: 10px; color: rgb(246, 199, 86); font-size: 14px; font-weight: 800; background: rgba(3, 25, 54, 0.62); transition: transform 0.2s, background 0.2s; }
+  .rimmi-promo:hover .promo-action, .rimmi-promo:focus-visible .promo-action { transform: translateX(3px); background: rgba(230, 185, 79, 0.12); }
+  .rimmi-promo:focus-visible { outline: rgb(96, 165, 250) solid 3px; outline-offset: 3px; }
+  .promo-rimmi { position: absolute; z-index: 1; right: -10px; bottom: -36px; width: 168px; height: auto; filter: drop-shadow(rgba(0, 0, 0, 0.32) 0px 8px 16px); }
+  @media (max-width: 380px) { .promo-copy { width: 68%; padding-left: 18px; } .promo-title { font-size: 19px; } .promo-rimmi { width: 150px; right: -18px; } }
+  .rimmi-promo { min-height: 0px; aspect-ratio: 775 / 385; border: 0px; border-radius: 22px; background: rgb(4, 26, 58); }
+  .rimmi-promo::before, .rimmi-promo::after { display: none; }
+  .promo-approved-art { position: absolute; z-index: 1; width: 110.065%; height: auto; max-width: none; left: -4.903%; top: -328.052%; display: block; }
 </style>
 </head>
 <body>
@@ -165,6 +181,11 @@
     <button class="btn-primary" id="btnStartCamera">เปิดกล้องเพื่อเช็กอิน</button>
     <button class="btn-secondary" id="btnStartCheckout">🌙 เช็คเอาต์ตอนเย็น (ไม่บังคับ)</button>
     <p class="hint">ลืมรหัส PIN? ให้หัวหน้ากด "รีเซ็ต PIN" ในแดชบอร์ด แล้วมาตั้งใหม่ได้ที่นี่</p>
+
+    <!-- แบนเนอร์น้องริมมี่ (Rimmi for Officer) — โค้ดต้นฉบับ กู้จาก Netlify deploy 6a5c52a9 -->
+    <a class="rimmi-promo" href="https://rimmiforofficer.netlify.app/#" target="_blank" rel="noopener noreferrer" aria-label="เปิด Rimmi for Officer ในหน้าต่างใหม่">
+      <img class="promo-approved-art" src="rimmi-approved-mockup.png" alt="น้องริมมี่ ผู้ช่วยเบื้องหลัง ค้นกฎหมาย ระเบียบ คำสั่ง และงานขออยู่ต่อ">
+    </a>
   </section>
 
   <!-- 3) หน้ากล้องสด (ใช้ร่วมกันทั้งเช็กอินเช้าและเช็คเอาต์เย็น) -->
