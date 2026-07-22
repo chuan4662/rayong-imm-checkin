@@ -110,6 +110,23 @@
   .stats-flag-row.brown{color:var(--brown);}
   .stats-total{margin-top:12px; padding-top:12px; border-top:1px solid #a7f3d0; display:flex; justify-content:space-between; font-size:13px; color:#065f46; font-weight:700;}
 
+  /* กล่องคำชมจากประชาชน (เห็นเฉพาะเจ้าของ, เฉพาะคำชมที่หัวหน้าอนุมัติแล้ว) */
+  .praise-box{
+    margin-top:16px; padding:20px 18px; border-radius:16px;
+    background:#fffbeb; border:1px solid #fde68a; text-align:left;
+  }
+  .praise-title{font-size:15px; font-weight:800; color:#92400e; text-align:center;}
+  .praise-sub{font-size:12px; color:#b45309; text-align:center; margin-bottom:14px; line-height:1.5;}
+  .praise-count{font-size:15px; font-weight:800; color:#92400e; text-align:center; padding:10px 2px; border-top:1px dashed #fcd34d; border-bottom:1px dashed #fcd34d;}
+  .praise-count .num{font-size:22px; color:#b45309;}
+  .praise-list{margin-top:12px; display:flex; flex-direction:column; gap:10px;}
+  .praise-item{background:#fff; border:1px solid #fde68a; border-radius:12px; padding:12px 14px;}
+  .praise-item-top{display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#b45309; margin-bottom:6px; gap:8px;}
+  .praise-item-stars{font-size:13px; letter-spacing:1px; white-space:nowrap;}
+  .praise-item-msg{font-size:14px; color:#374151; line-height:1.55; white-space:pre-wrap; word-break:break-word;}
+  .praise-empty{font-size:13px; color:#b45309; text-align:center; padding:12px 4px; line-height:1.6;}
+  .praise-discuss{margin-top:14px; padding:12px 14px; border-radius:12px; background:#eff6ff; border:1px solid #bfdbfe; font-size:13px; color:#1e40af; line-height:1.6;}
+
   /* กล่องหมายเหตุเพิ่มเติมหลังเช็กอิน (ไม่บังคับ, write-once) */
   .remark-box{
     margin-top:16px; padding:20px 18px; border-radius:16px;
@@ -269,6 +286,15 @@
       <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="resultStatTotal">-</span></div>
     </div>
 
+    <div class="praise-box" id="resultPraiseBox">
+      <div class="praise-title">🌟 คำชมจากประชาชน</div>
+      <div class="praise-sub">เห็นเฉพาะคุณ · แสดงเฉพาะคำชมที่หัวหน้าอนุมัติแล้ว</div>
+      <div class="praise-count" id="resultPraiseCount">กำลังโหลด...</div>
+      <div class="praise-list" id="resultPraiseList"></div>
+      <div class="praise-empty hidden" id="resultPraiseEmpty">เดือนนี้ยังไม่มีคำชมที่อนุมัติ — ตั้งใจทำหน้าที่ต่อไปนะครับ 💪</div>
+      <div class="praise-discuss hidden" id="resultPraiseDiscuss">💬 หัวหน้ามีเรื่องอยากพูดคุยด้วยเมื่อสะดวก</div>
+    </div>
+
     <div class="remark-box">
       <div class="remark-title">📝 อยากบอกอะไรหัวหน้าเพิ่มเติมไหม</div>
       <div class="remark-sub">ไม่บังคับ เช่น 🕐 เลิกงานดึก/OT · 🎯 เป้าหมายวันนี้ · 📌 งานที่ได้รับมอบหมายเพิ่ม · 🤝 ทำเพื่อส่วนรวม · 💡 ปัญหา+ข้อเสนอแนะ · 👍 ชื่นชม/ขอบคุณ</div>
@@ -318,6 +344,15 @@
       <div class="stats-flag-row" style="color:#b45309;"><span>🥇 เป็นที่ 1 ของวัน</span><span class="count" id="alreadyStatGold">-</span></div>
       <div class="stats-flag-row" style="color:#6b7280;"><span>🥈 เป็นที่ 2 ของวัน</span><span class="count" id="alreadyStatSilver">-</span></div>
       <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="alreadyStatTotal">-</span></div>
+    </div>
+
+    <div class="praise-box" id="alreadyPraiseBox">
+      <div class="praise-title">🌟 คำชมจากประชาชน</div>
+      <div class="praise-sub">เห็นเฉพาะคุณ · แสดงเฉพาะคำชมที่หัวหน้าอนุมัติแล้ว</div>
+      <div class="praise-count" id="alreadyPraiseCount">กำลังโหลด...</div>
+      <div class="praise-list" id="alreadyPraiseList"></div>
+      <div class="praise-empty hidden" id="alreadyPraiseEmpty">เดือนนี้ยังไม่มีคำชมที่อนุมัติ — ตั้งใจทำหน้าที่ต่อไปนะครับ 💪</div>
+      <div class="praise-discuss hidden" id="alreadyPraiseDiscuss">💬 หัวหน้ามีเรื่องอยากพูดคุยด้วยเมื่อสะดวก</div>
     </div>
 
     <div class="remark-box">
@@ -1190,6 +1225,7 @@
 
     loadMotto("alreadyMotto");
     loadMyStats(officerId, pin, "already");
+    loadMyPraise(officerId, pin, "already");
   }
 
   // ================= เหรียญทอง/เงิน — เช็กอินคนแรก/คนที่สองของวัน (P1b) =================
@@ -1252,6 +1288,71 @@
         }
       }
     });
+  }
+
+  // ================= คำชมจากประชาชน (เห็นเฉพาะเจ้าของ, ต้องยืนยัน PIN ในตัว RPC เอง) =================
+  // ยึดกติกาเหล็ก: โชว์เฉพาะคำชมที่หัวหน้าอนุมัติแล้ว (get_my_praise คืนเฉพาะ praise_approved=true)
+  //   ไม่มีเนื้อหาคำติเด็ดขาด — has_discuss เป็นแค่ boolean "หัวหน้าอยากคุยด้วยไหม"
+  function praiseStars(n){
+    n = parseInt(n, 10); if (!n || n < 0) n = 0; if (n > 5) n = 5;
+    return "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
+  }
+  function loadMyPraise(officerId, pin, prefix){
+    var box     = document.getElementById(prefix + "PraiseBox");
+    var countEl = document.getElementById(prefix + "PraiseCount");
+    var listEl  = document.getElementById(prefix + "PraiseList");
+    var emptyEl = document.getElementById(prefix + "PraiseEmpty");
+    var discEl  = document.getElementById(prefix + "PraiseDiscuss");
+    if (!box) return;
+    sb.rpc("get_my_praise", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        // ล้มเหลว/PIN ไม่ผ่าน — ซ่อนกล่องไปเงียบๆ (ไม่รบกวนหน้าเช็กอิน)
+        box.classList.add("hidden");
+        return;
+      }
+      var d = res.data;
+      var cnt = d.praise_month_count || 0;
+      if (countEl) countEl.innerHTML = "เดือนนี้ได้รับคำชม <span class=\"num\">" + cnt + "</span> ครั้ง";
+      var recent = Array.isArray(d.recent_praises) ? d.recent_praises : [];
+      if (listEl) listEl.innerHTML = "";
+      if (recent.length === 0) {
+        if (emptyEl) emptyEl.classList.remove("hidden");
+      } else {
+        if (emptyEl) emptyEl.classList.add("hidden");
+        recent.forEach(function(p){
+          var item = document.createElement("div");
+          item.className = "praise-item";
+          var top = document.createElement("div");
+          top.className = "praise-item-top";
+          var left = document.createElement("span");
+          left.textContent = formatPraiseDate(p.local_date || p.created_at) + (p.counter_label ? " · " + p.counter_label : "");
+          var stars = document.createElement("span");
+          stars.className = "praise-item-stars";
+          var avg = Math.round(((parseInt(p.star_polite,10)||0) + (parseInt(p.star_clarity,10)||0)) / 2);
+          stars.textContent = praiseStars(avg);
+          top.appendChild(left); top.appendChild(stars);
+          var msg = document.createElement("div");
+          msg.className = "praise-item-msg";
+          msg.textContent = p.message || "(ไม่มีข้อความ)";
+          item.appendChild(top); item.appendChild(msg);
+          if (listEl) listEl.appendChild(item);
+        });
+      }
+      // สัญญาณ discuss แบบนุ่มนวล — ไม่มีเนื้อหา
+      if (discEl) {
+        if (d.has_discuss === true) discEl.classList.remove("hidden");
+        else discEl.classList.add("hidden");
+      }
+      box.classList.remove("hidden");
+    }).catch(function(){ box.classList.add("hidden"); });
+  }
+  function formatPraiseDate(s){
+    if (!s) return "";
+    var parts = String(s).split("T")[0].split("-");
+    if (parts.length < 3) return String(s);
+    var y = parseInt(parts[0],10), m = parseInt(parts[1],10), day = parseInt(parts[2],10);
+    if (!y || !m || !day) return String(s);
+    return day + " " + THAI_MONTHS[m - 1] + " " + (y + 543);
   }
 
   // ================= หมายเหตุเพิ่มเติมหลังเช็กอิน (ไม่บังคับ, write-once) =================
@@ -1376,6 +1477,7 @@
     showMedalBadge("result", data.daily_rank);
     loadMotto("resultMotto");
     loadMyStats(data.officerId, data.pin, "result");
+    loadMyPraise(data.officerId, data.pin, "result");
 
     remarkState.result = { officerId: data.officerId, pin: data.pin };
     resetRemarkBox("result"); // เพิ่งเช็กอินสำเร็จ ยังไม่เคยมีหมายเหตุของวันนี้แน่นอน

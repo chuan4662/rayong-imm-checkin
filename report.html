@@ -89,6 +89,34 @@
     letter-spacing:.5px; margin:22px 4px 10px;
   }
 
+  /* ===== กล่องเสียงประชาชน (ติ–ชม) ===== */
+  .fb-list{display:flex; flex-direction:column; gap:14px;}
+  .fb-item{border:1px solid #e5e7eb; border-radius:14px; padding:16px; background:#fff;}
+  .fb-item.praise{border-left:5px solid #c9a227; background:#fffdf5;}
+  .fb-item.issue{border-left:5px solid #dc2626; background:#fffafa;}
+  .fb-item-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .fb-kind{display:inline-block; padding:4px 12px; border-radius:999px; font-weight:800; font-size:13px; white-space:nowrap;}
+  .fb-kind.praise{background:#fef3c7; color:#92400e;}
+  .fb-kind.issue{background:#fee2e2; color:#991b1b;}
+  .fb-meta{font-size:12px; color:var(--muted); text-align:right; line-height:1.5;}
+  .fb-officer{font-size:14px; font-weight:700; color:#111827; margin-bottom:6px;}
+  .fb-stars{font-size:14px; letter-spacing:1px; color:#c9a227; margin-bottom:6px;}
+  .fb-msg{font-size:14px; color:#374151; line-height:1.6; white-space:pre-wrap; word-break:break-word; background:#f9fafb; border:1px solid #eef1f4; border-radius:10px; padding:12px 14px;}
+  .fb-sub{font-size:12px; color:var(--muted); margin-top:8px; display:flex; gap:14px; flex-wrap:wrap;}
+  .fb-pill{display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700;}
+  .fb-pill.ok{background:#dcfce7; color:#166534;}
+  .fb-pill.wait{background:#fef9c3; color:#854d0e;}
+  .fb-pill.muted{background:#f3f4f6; color:#6b7280;}
+  .fb-actions{margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .fb-actions .btn-small{margin:0;}
+  .fb-note{width:100%; margin-top:10px;}
+  .fb-note textarea{width:100%; min-height:56px; padding:10px 12px; font-size:14px; border:1px solid #d1d5db; border-radius:10px; box-sizing:border-box;}
+  .fb-note-label{font-size:12px; color:var(--muted); margin:6px 0 4px;}
+  .fb-empty{text-align:center; color:var(--muted); padding:24px 8px; font-size:14px;}
+  .btn-approve{background:var(--green,#16a34a); color:#fff; font-size:13px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:700;}
+  .btn-approve:disabled{opacity:.55; cursor:default;}
+  .btn-review{background:var(--blue); color:#fff; font-size:13px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:700;}
+
   /* ===== ตารางแบบการ์ดบนมือถือแนวตั้ง (ไม่แตะ JS — ใช้ nth-child แม็ปกับโครงสร้างคอลัมน์ที่ตายตัวของแต่ละตาราง) ===== */
   @media (max-width: 640px){
     #app table{display:block; width:100%;}
@@ -241,6 +269,7 @@
 
     <nav class="group-nav">
       <a href="#group-daily">📋 ประจำวัน</a>
+      <a href="#group-feedback">💬 เสียงประชาชน</a>
       <a href="#group-reports">📊 รายงาน</a>
       <a href="#group-settings">⚙️ ตั้งค่า</a>
     </nav>
@@ -272,6 +301,46 @@
         <h2>🟤 ขาดเช็กอิน (วันนี้)</h2>
         <p class="sub" style="margin:0 0 12px;">แสดงเฉพาะผู้ที่ควรทำงานวันนี้ตามวันทำงานที่ตั้งไว้ และไม่ตรงกับวันหยุดนักขัตฤกษ์ — จะฟันธงหลังเวลา 16:30 น. เท่านั้น เผื่อบางคนมีธุระช่วงเช้าแล้วมาทำงานช่วงบ่าย</p>
         <div id="absenteesWrap"><div class="center">กำลังโหลด...</div></div>
+      </div>
+    </div>
+
+    <div id="group-feedback" class="group-section">
+      <h3 class="group-heading">💬 เสียงประชาชน (ติ–ชม)</h3>
+
+      <div class="card">
+        <div class="topbar">
+          <h2>กล่องเสียงประชาชน <span id="fbUnreadBadge" class="badge red hidden">0</span></h2>
+          <button class="btn-small" id="fbReload">↻ โหลดใหม่</button>
+        </div>
+        <p class="sub" style="margin:0 0 12px;">
+          🔒 <b>คำติ (ติ)</b> จากประชาชนจะ<b>ไม่ถูกส่งถึงตัวเจ้าหน้าที่</b> — เห็นเฉพาะหัวหน้า ใช้ดูแล/โค้ชเป็นการภายในเท่านั้น ·
+          <b>คำชม (ชม)</b> จะไปแสดงในหน้าเช็กอินของเจ้าหน้าที่<b>เฉพาะเมื่อหัวหน้ากด “อนุมัติ” แล้ว</b>เท่านั้น
+        </p>
+        <div class="filter-row">
+          <div>
+            <label for="fbStart">จากวันที่</label>
+            <input type="date" id="fbStart">
+          </div>
+          <div>
+            <label for="fbEnd">ถึงวันที่</label>
+            <input type="date" id="fbEnd">
+          </div>
+          <div>
+            <label for="fbKind">ประเภท</label>
+            <select id="fbKind">
+              <option value="">ทั้งหมด</option>
+              <option value="issue">📣 ติ (ข้อเสนอแนะ/ปัญหา)</option>
+              <option value="praise">🌟 ชม (คำชม)</option>
+            </select>
+          </div>
+          <div>
+            <label for="fbCounter">เคาน์เตอร์/กลุ่มงาน</label>
+            <select id="fbCounter"><option value="">ทุกกลุ่ม</option></select>
+          </div>
+          <button class="btn-primary" id="fbSearch" style="width:auto; margin-top:0; padding:12px 20px;">ค้นหา</button>
+        </div>
+        <div id="fbError" class="error-box hidden"></div>
+        <div id="fbListWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
     </div>
 
@@ -561,6 +630,8 @@
       loadHolidays();
       loadStatsPeriodOverrides();
       loadTeamCoverage();
+      populateFeedbackCounterFilter();
+      loadFeedback();
       var todayStr2 = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
       document.getElementById("histStart").value = todayStr2;
       document.getElementById("histEnd").value = todayStr2;
@@ -1386,6 +1457,199 @@
       loadStatsPeriodOverrides();
     });
   });
+
+  // ================= 💬 เสียงประชาชน (ติ–ชม) — หน้ารายงาน (หัวหน้า PIN) =================
+  // ยึดกติกาเหล็ก: คำติไม่ถึงเจ้าหน้าที่ (เห็นเฉพาะหัวหน้า) · คำชมถึงเจ้าหน้าที่ต่อเมื่อกดอนุมัติ
+  // ใช้ RPC ฝั่ง PIN (do_supervisor_*) เพราะหน้านี้ล็อกอินด้วย PIN — ส่ง session.officerId+session.pin ทุกครั้ง
+  function fbFmtDate(s){
+    if (!s) return "-";
+    var d = String(s).split("T")[0].split("-");
+    if (d.length < 3) return String(s);
+    var y = parseInt(d[0],10), m = parseInt(d[1],10), day = parseInt(d[2],10);
+    if (!y || !m || !day) return String(s);
+    return day + " " + (THAI_MONTHS_SHORT[m - 1] || m) + " " + (y + 543);
+  }
+  function fbStars(n){
+    n = parseInt(n, 10); if (!n || n < 0) n = 0; if (n > 5) n = 5;
+    return "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
+  }
+  function fbCaseDoneLabel(v){
+    return v === "done" ? "✅ ทำงานเสร็จ" : v === "not_done" ? "⏳ ยังไม่เสร็จ" : v === "na" ? "– ไม่ระบุ" : "";
+  }
+  function populateFeedbackCounterFilter(){
+    var sel = document.getElementById("fbCounter");
+    if (!sel) return;
+    // ดึงรายการกลุ่มงานจาก RPC anon เดียวกับฟอร์มประชาชน (source of truth เดียวกัน)
+    sb.rpc("list_feedback_counters").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true || !Array.isArray(res.data.counters)) return;
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">ทุกกลุ่ม</option>' + res.data.counters.map(function(name){
+        return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
+      }).join("");
+      sel.value = cur;
+    }).catch(function(){});
+  }
+  function loadFeedback(){
+    if (!session) return;
+    var wrap = document.getElementById("fbListWrap");
+    var errEl = document.getElementById("fbError");
+    if (errEl) errEl.classList.add("hidden");
+    if (wrap) wrap.innerHTML = '<div class="center">กำลังโหลด...</div>';
+    var params = {
+      p_officer_id: session.officerId,
+      p_pin: session.pin,
+      p_start:   document.getElementById("fbStart").value || null,
+      p_end:     document.getElementById("fbEnd").value   || null,
+      p_counter: document.getElementById("fbCounter").value || null,
+      p_target_officer: null,
+      p_kind:    document.getElementById("fbKind").value  || null
+    };
+    sb.rpc("do_supervisor_list_feedback", params).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        if (wrap) wrap.innerHTML = "";
+        if (errEl) {
+          var code = res.data ? res.data.error : "unknown";
+          errEl.textContent = code === "bad_pin" ? "รหัส PIN ไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่"
+            : code === "pin_locked" ? "ถูกล็อกชั่วคราวจากการกรอก PIN ผิดหลายครั้ง"
+            : code === "not_supervisor" ? "บัญชีนี้ไม่มีสิทธิ์หัวหน้า"
+            : "โหลดข้อมูลไม่สำเร็จ" + (code ? " (" + code + ")" : "");
+          errEl.classList.remove("hidden");
+        }
+        return;
+      }
+      renderFeedbackList(res.data);
+    }).catch(function(){
+      if (wrap) wrap.innerHTML = "";
+      if (errEl) { errEl.textContent = "เกิดข้อผิดพลาดในการเชื่อมต่อ"; errEl.classList.remove("hidden"); }
+    });
+  }
+  function renderFeedbackList(data){
+    var wrap = document.getElementById("fbListWrap");
+    var badge = document.getElementById("fbUnreadBadge");
+    var unread = data.unread_issue_count || 0;
+    if (badge) {
+      if (unread > 0) { badge.textContent = "ติใหม่ " + unread; badge.classList.remove("hidden"); }
+      else { badge.classList.add("hidden"); }
+    }
+    var items = Array.isArray(data.items) ? data.items : [];
+    if (items.length === 0) {
+      wrap.innerHTML = '<div class="fb-empty">ยังไม่มีข้อมูลในเงื่อนไขที่เลือก</div>';
+      return;
+    }
+    var list = document.createElement("div");
+    list.className = "fb-list";
+    items.forEach(function(it){ list.appendChild(buildFeedbackItem(it)); });
+    wrap.innerHTML = "";
+    wrap.appendChild(list);
+  }
+  function buildFeedbackItem(it){
+    var isPraise = it.kind === "praise";
+    var el = document.createElement("div");
+    el.className = "fb-item " + (isPraise ? "praise" : "issue");
+    el.setAttribute("data-id", it.id);
+
+    var html = "";
+    html += '<div class="fb-item-head">';
+    html += '<span class="fb-kind ' + (isPraise ? "praise" : "issue") + '">' + (isPraise ? "🌟 ชม" : "📣 ติ") + '</span>';
+    html += '<span class="fb-meta">' + fbFmtDate(it.local_date || it.created_at) +
+            (it.counter_label ? '<br>' + escapeHtml(it.counter_label) : '') +
+            (it.lang ? ' · ' + escapeHtml(String(it.lang).toUpperCase()) : '') + '</span>';
+    html += '</div>';
+
+    if (isPraise && it.display_name) {
+      html += '<div class="fb-officer">👮 ' + escapeHtml(it.display_name) + '</div>';
+    }
+    if (isPraise && (it.star_polite || it.star_clarity)) {
+      html += '<div class="fb-stars">สุภาพ ' + fbStars(it.star_polite) + '  ·  ชัดเจน ' + fbStars(it.star_clarity) + '</div>';
+    }
+
+    html += '<div class="fb-msg">' + (it.message ? escapeHtml(it.message) : '<i style="color:#9ca3af;">(ไม่มีข้อความ)</i>') + '</div>';
+
+    var subs = [];
+    if (it.case_done) subs.push(fbCaseDoneLabel(it.case_done));
+    if (it.contact) subs.push("📇 ติดต่อ: " + escapeHtml(it.contact));
+    if (subs.length) html += '<div class="fb-sub">' + subs.map(function(s){ return '<span>' + s + '</span>'; }).join("") + '</div>';
+
+    var pills = [];
+    if (isPraise) {
+      pills.push(it.praise_approved
+        ? '<span class="fb-pill ok">✅ อนุมัติแล้ว (เจ้าหน้าที่เห็นได้)</span>'
+        : '<span class="fb-pill wait">⏳ ยังไม่อนุมัติ (เจ้าหน้าที่ยังไม่เห็น)</span>');
+    } else {
+      pills.push(it.reviewed_at
+        ? '<span class="fb-pill ok">✅ รับเรื่องแล้ว</span>'
+        : '<span class="fb-pill wait">🔴 ยังไม่ได้เปิดอ่าน</span>');
+    }
+    if (it.discuss_flag) pills.push('<span class="fb-pill muted">🔖 ทำเครื่องหมายอยากคุยกับเจ้าหน้าที่</span>');
+    html += '<div class="fb-sub">' + pills.join(" ") + '</div>';
+
+    el.innerHTML = html;
+
+    var actions = document.createElement("div");
+    actions.className = "fb-actions";
+
+    if (isPraise) {
+      var btnApprove = document.createElement("button");
+      btnApprove.className = "btn-approve";
+      if (it.praise_approved) { btnApprove.textContent = "อนุมัติแล้ว"; btnApprove.disabled = true; }
+      else {
+        btnApprove.textContent = "✔ อนุมัติให้เจ้าหน้าที่เห็น";
+        btnApprove.addEventListener("click", function(){
+          btnApprove.disabled = true; btnApprove.textContent = "กำลังบันทึก...";
+          sb.rpc("do_supervisor_approve_praise", { p_officer_id: session.officerId, p_pin: session.pin, p_id: it.id }).then(function(r){
+            if (r.error || !r.data || r.data.ok !== true) { btnApprove.disabled = false; btnApprove.textContent = "✔ อนุมัติให้เจ้าหน้าที่เห็น"; alertFb("อนุมัติไม่สำเร็จ"); return; }
+            loadFeedback();
+          }).catch(function(){ btnApprove.disabled = false; btnApprove.textContent = "✔ อนุมัติให้เจ้าหน้าที่เห็น"; alertFb("เกิดข้อผิดพลาด"); });
+        });
+      }
+      actions.appendChild(btnApprove);
+      if (it.officer_id) actions.appendChild(buildDiscussBtn(it));
+      el.appendChild(actions);
+    } else {
+      var noteWrap = document.createElement("div");
+      noteWrap.className = "fb-note";
+      noteWrap.innerHTML = '<div class="fb-note-label">📝 บันทึกการรับเรื่อง/การจัดการ (ภายใน — ไม่ส่งถึงเจ้าหน้าที่)</div>';
+      var ta = document.createElement("textarea");
+      ta.value = it.review_note || "";
+      ta.placeholder = "เช่น รับเรื่องแล้ว ประสานเคาน์เตอร์ปรับปรุงการจัดคิว...";
+      noteWrap.appendChild(ta);
+      el.appendChild(noteWrap);
+
+      var btnReview = document.createElement("button");
+      btnReview.className = "btn-review";
+      btnReview.textContent = it.reviewed_at ? "อัปเดตบันทึก" : "✔ รับเรื่อง / บันทึก";
+      btnReview.addEventListener("click", function(){
+        btnReview.disabled = true; var prev = btnReview.textContent; btnReview.textContent = "กำลังบันทึก...";
+        sb.rpc("do_supervisor_review_feedback", { p_officer_id: session.officerId, p_pin: session.pin, p_id: it.id, p_note: ta.value.trim() || null }).then(function(r){
+          btnReview.disabled = false;
+          if (r.error || !r.data || r.data.ok !== true) { btnReview.textContent = prev; alertFb("บันทึกไม่สำเร็จ"); return; }
+          loadFeedback();
+        }).catch(function(){ btnReview.disabled = false; btnReview.textContent = prev; alertFb("เกิดข้อผิดพลาด"); });
+      });
+      actions.appendChild(btnReview);
+      el.appendChild(actions);
+    }
+    return el;
+  }
+  function buildDiscussBtn(it){
+    var btn = document.createElement("button");
+    btn.className = "btn-small";
+    btn.textContent = it.discuss_flag ? "🔖 ยกเลิกเครื่องหมายอยากคุย" : "🔖 ทำเครื่องหมายอยากคุยด้วย";
+    btn.addEventListener("click", function(){
+      btn.disabled = true;
+      sb.rpc("do_supervisor_set_discuss_flag", { p_officer_id: session.officerId, p_pin: session.pin, p_id: it.id, p_on: !it.discuss_flag }).then(function(r){
+        if (r.error || !r.data || r.data.ok !== true) { btn.disabled = false; alertFb("อัปเดตไม่สำเร็จ"); return; }
+        loadFeedback();
+      }).catch(function(){ btn.disabled = false; alertFb("เกิดข้อผิดพลาด"); });
+    });
+    return btn;
+  }
+  function alertFb(msg){
+    var errEl = document.getElementById("fbError");
+    if (errEl) { errEl.textContent = msg; errEl.classList.remove("hidden"); setTimeout(function(){ errEl.classList.add("hidden"); }, 4000); }
+  }
+  document.getElementById("fbSearch").addEventListener("click", loadFeedback);
+  document.getElementById("fbReload").addEventListener("click", function(){ populateFeedbackCounterFilter(); loadFeedback(); });
 
   loadSupervisors();
 })();
