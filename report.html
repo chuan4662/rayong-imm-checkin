@@ -748,20 +748,63 @@
     });
   }
 
-  function attachPhotoLoaders(wrap){
-    wrap.querySelectorAll("img[data-photo]").forEach(function(img){
-      var path = img.getAttribute("data-photo");
-      if (!path) return;
+  // ================= โหลดรูปย่อแบบประหยัด (lazy + จำกัดคิว) =================
+  // ⚠️ (22 ก.ค. 2569) แก้บั๊ก "ค้นประวัติช่วงยาวแล้วเว็บค้าง / กดแล้วไม่ขึ้นอะไร" (โดยเฉพาะบนมือถือ)
+  // เดิม: ยิงขอ signed URL ของรูป "ทุกแถวพร้อมกันทันที" — ค้นทั้งเดือน = 303 แถว = 303 คำขอพร้อมกัน
+  //       แต่ละคำขอต้องตรวจ PIN ฝั่งเซิร์ฟเวอร์ (bcrypt) ทำให้คิวยาวมาก วัดจริงได้เฉลี่ย ~21 วิ/คำขอ
+  //       ช้าสุด ~40 วิ จนแท็บไม่ตอบสนอง (หน้า dashboard.html ไม่เจอปัญหานี้เพราะมี auth session
+  //       จึงสร้าง signed URL เองฝั่ง client ได้ ไม่ต้องผ่าน Edge Function ทีละรูป)
+  // ตอนนี้: (1) โหลดเฉพาะรูปที่เลื่อนมาเห็นจริง (IntersectionObserver, เผื่อล่วงหน้า 200px)
+  //         (2) จำกัดจำนวนคำขอพร้อมกันไม่เกิน PHOTO_MAX_CONCURRENT รูป
+  //         (3) ข้ามรูปที่หลุดจากหน้าไปแล้ว (เช่นกดค้นหาใหม่ทับ) ไม่ยิงคำขอทิ้งเปล่า
+  var PHOTO_MAX_CONCURRENT = 5;
+  var photoQueue = [];
+  var photoActive = 0;
+  function photoPump(){
+    while (photoActive < PHOTO_MAX_CONCURRENT && photoQueue.length > 0) {
+      var job = photoQueue.shift();
+      photoActive++;
+      job(function(){ photoActive--; photoPump(); });
+    }
+  }
+  function enqueuePhoto(img, path){
+    photoQueue.push(function(done){
+      // ตารางถูกวาดทับไปแล้ว (กดค้นหาใหม่) — ไม่ต้องเสียคำขอกับรูปที่ไม่มีใครเห็นแล้ว
+      if (img.isConnected === false) { done(); return; }
       fetch(PHOTO_FN_URL, {
         method: "POST",
         headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({ officer_id: session.officerId, pin: session.pin, photo_path: path })
       }).then(function(r){ return r.json(); }).then(function(j){
-        if (!j || j.ok !== true) return;
-        img.src = j.url;
-        img.addEventListener("click", function(){ window.open(j.url, "_blank"); });
-      }).catch(function(){});
+        if (j && j.ok === true) {
+          img.src = j.url;
+          img.addEventListener("click", function(){ window.open(j.url, "_blank"); });
+        }
+        done();
+      }).catch(function(){ done(); });
     });
+    photoPump();
+  }
+  function attachPhotoLoaders(wrap){
+    var imgs = wrap.querySelectorAll("img[data-photo]");
+    // เบราว์เซอร์เก่าที่ไม่รองรับ IntersectionObserver — ยังใช้ได้ปกติ แค่โหลดทุกรูปผ่านคิวจำกัดจำนวน
+    if (!("IntersectionObserver" in window)) {
+      imgs.forEach(function(img){
+        var p0 = img.getAttribute("data-photo");
+        if (p0) enqueuePhoto(img, p0);
+      });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries, obs){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var img = en.target;
+        obs.unobserve(img);
+        var p = img.getAttribute("data-photo");
+        if (p && !img.getAttribute("src")) enqueuePhoto(img, p);
+      });
+    }, { rootMargin: "200px 0px" });
+    imgs.forEach(function(img){ io.observe(img); });
   }
 
   // ================= ตัดข้อความหมายเหตุเพิ่มเติมที่ยาวเกินไปในตาราง + ปุ่มอ่านเพิ่มเติม =================
