@@ -86,6 +86,11 @@
   .medal-box.gold{background:linear-gradient(135deg,#fde68a,#d97706); color:#78350f;}
   .medal-box.silver{background:linear-gradient(135deg,#f3f4f6,#9ca3af); color:#1f2937;}
 
+  /* กล่องแจ้งเตือนคิวจองออนไลน์ (booking.rayongimm.link) — แสดงหลังเช็กอินเมื่อมีคิวรอ */
+  .queue-alert{margin-top:14px; padding:14px 16px; border-radius:12px; background:#eff6ff; border:2px solid #1d4ed8; color:#1e3a8a; text-align:left; font-size:15px; line-height:1.6;}
+  .queue-alert .qa-title{font-weight:800; font-size:16px; margin-bottom:4px;}
+  .queue-alert .qa-btn{display:block; margin-top:10px; background:#1d4ed8; color:#fff; text-align:center; padding:12px; border-radius:10px; font-weight:700; text-decoration:none; font-size:16px;}
+
   /* ป้ายระดับเช็คเอาต์ตอนเย็น (P1.4) — อยู่เย็น/อยู่ดึก */
   .tier-badge{
     margin-top:16px; padding:14px 18px; border-radius:14px;
@@ -263,6 +268,7 @@
       <div class="result-row"><span>ความพร้อม</span><span id="resReady">-</span></div>
     </div>
     <div id="resGpsWarning" class="warning-box hidden">⚠️ คุณเช็กอินโดยไม่ได้เปิด/อนุญาต GPS — ระบบยังบันทึกเช็กอินให้ตามปกติ แต่หัวหน้าจะเห็นว่าไม่มีข้อมูลระยะห่าง</div>
+    <div id="resultQueueBox" class="queue-alert hidden"></div>
     <button class="btn-primary" id="btnDone">เสร็จสิ้น</button>
 
     <div id="resultMedalBox" class="medal-box hidden"></div>
@@ -323,6 +329,7 @@
       <div class="result-row"><span>หมายเหตุที่บันทึกไว้</span><span id="alreadyNote">-</span></div>
     </div>
     <div id="alreadyGpsWarning" class="warning-box hidden">⚠️ เช็กอินครั้งนั้นไม่ได้เปิด/อนุญาต GPS — ไม่มีข้อมูลระยะห่างให้หัวหน้าดู</div>
+    <div id="alreadyQueueBox" class="queue-alert hidden"></div>
     <button class="btn-primary" id="btnDoneAlready">ตกลง</button>
 
     <div id="alreadyMedalBox" class="medal-box hidden"></div>
@@ -1224,8 +1231,28 @@
     });
 
     loadMotto("alreadyMotto");
+    loadQueueAlert(officerId, "already");
     loadMyStats(officerId, pin, "already");
     loadMyPraise(officerId, pin, "already");
+  }
+
+  // ================= คิวจองออนไลน์ (booking.rayongimm.link) — แจ้งหลังเช็กอินว่ามีคิวรอดำเนินการ =================
+  // prefix = "result" หรือ "already" — RPC คืนเฉพาะจำนวนคิว (ไม่มีข้อมูลส่วนบุคคล) จึงไม่ต้องใช้ PIN
+  function loadQueueAlert(officerId, prefix){
+    var el = document.getElementById(prefix + "QueueBox");
+    if (!el || !officerId) return;
+    el.className = "queue-alert hidden";
+    sb.rpc("do_officer_queue_badge", { p_officer_id: officerId }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) return; // ดึงไม่ได้ = ไม่โชว์ ไม่รบกวนการเช็กอิน
+      var nAction = res.data.action || 0, nToday = res.data.today || 0;
+      if (!nAction && !nToday) return;
+      var html = "<div class='qa-title'>📥 คิวจองออนไลน์ของคุณ</div>";
+      if (nAction) html += "🔔 มีคิวรอคุณดำเนินการ <b>" + nAction + " คิว</b> — กดรับ / ถามข้อมูล / ยืนยันรับคิว<br>";
+      if (nToday) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + nToday + " คิว</b> เริ่ม 09:00 น.<br>";
+      html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
+      el.innerHTML = html;
+      el.classList.remove("hidden");
+    }).catch(function(){});
   }
 
   // ================= เหรียญทอง/เงิน — เช็กอินคนแรก/คนที่สองของวัน (P1b) =================
@@ -1476,6 +1503,7 @@
 
     showMedalBadge("result", data.daily_rank);
     loadMotto("resultMotto");
+    loadQueueAlert(data.officerId, "result");
     loadMyStats(data.officerId, data.pin, "result");
     loadMyPraise(data.officerId, data.pin, "result");
 
