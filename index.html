@@ -90,6 +90,10 @@
   .queue-alert{margin-top:14px; padding:14px 16px; border-radius:12px; background:#eff6ff; border:2px solid #1d4ed8; color:#1e3a8a; text-align:left; font-size:15px; line-height:1.6;}
   .queue-alert .qa-title{font-weight:800; font-size:16px; margin-bottom:4px;}
   .queue-alert .qa-btn{display:block; margin-top:10px; background:#1d4ed8; color:#fff; text-align:center; padding:12px; border-radius:10px; font-weight:700; text-decoration:none; font-size:16px;}
+  /* กล่องเฝ้าดูคิว (หัวหน้างาน OSS / จุดคัดกรอง) — สีทอง แจ้งอย่างเดียว ไม่มีปุ่ม */
+  .queue-alert.watch{background:#FFFBEB; border-color:#C8A146; color:#6B5A2E;}
+  .queue-alert.watch .qa-row{padding:3px 0; font-size:14px;}
+  .queue-alert.watch .qa-sub{font-size:12.5px; color:#8A6A1E; margin-top:2px;}
 
   /* ป้ายระดับเช็คเอาต์ตอนเย็น (P1.4) — อยู่เย็น/อยู่ดึก */
   .tier-badge{
@@ -269,6 +273,7 @@
     </div>
     <div id="resGpsWarning" class="warning-box hidden">⚠️ คุณเช็กอินโดยไม่ได้เปิด/อนุญาต GPS — ระบบยังบันทึกเช็กอินให้ตามปกติ แต่หัวหน้าจะเห็นว่าไม่มีข้อมูลระยะห่าง</div>
     <div id="resultQueueBox" class="queue-alert hidden"></div>
+    <div id="resultWatchBox" class="queue-alert watch hidden"></div>
     <button class="btn-primary" id="btnDone">เสร็จสิ้น</button>
 
     <div id="resultMedalBox" class="medal-box hidden"></div>
@@ -330,6 +335,7 @@
     </div>
     <div id="alreadyGpsWarning" class="warning-box hidden">⚠️ เช็กอินครั้งนั้นไม่ได้เปิด/อนุญาต GPS — ไม่มีข้อมูลระยะห่างให้หัวหน้าดู</div>
     <div id="alreadyQueueBox" class="queue-alert hidden"></div>
+    <div id="alreadyWatchBox" class="queue-alert watch hidden"></div>
     <button class="btn-primary" id="btnDoneAlready">ตกลง</button>
 
     <div id="alreadyMedalBox" class="medal-box hidden"></div>
@@ -1232,6 +1238,7 @@
 
     loadMotto("alreadyMotto");
     loadQueueAlert(officerId, "already");
+    loadQueueWatch(officerId, pin, "already");
     loadMyStats(officerId, pin, "already");
     loadMyPraise(officerId, pin, "already");
   }
@@ -1251,6 +1258,40 @@
       if (nToday) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + nToday + " คิว</b> เริ่ม 09:00 น.<br>";
       html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
       el.innerHTML = html;
+      el.classList.remove("hidden");
+    }).catch(function(){});
+  }
+
+  // ================= กล่องเฝ้าดูคิวออนไลน์ — หัวหน้างาน OSS (oversight) / จุดคัดกรอง (dayof) =================
+  // เฉพาะคนที่มี officer.queue_watch เท่านั้น (คนอื่น RPC คืน role:null → ไม่แสดง) · ต้องยืนยัน PIN เพราะมีชื่อผู้จอง
+  function loadQueueWatch(officerId, pin, prefix){
+    var el = document.getElementById(prefix + "WatchBox");
+    if (!el || !officerId || !pin) return;
+    el.className = "queue-alert watch hidden";
+    sb.rpc("do_officer_queue_watch", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true || !res.data.role) return; // ไม่มีบทบาท/พลาด = เงียบ ไม่กระทบเช็กอิน
+      var d = res.data, h = "";
+      function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+      var todayRows = (d.today || []).map(function(q){
+        return "<div class='qa-row'>• <b>" + esc(q.ref) + "</b> — " + esc(q.name) + " <span class='qa-sub'>(" + esc(q.visa) + " · เจ้าของคิว: " + esc(q.nick) + ")</span></div>";
+      }).join("");
+      if (d.role === "dayof") {
+        h = "<div class='qa-title'>🛂 คิวออนไลน์วันนี้ · จุดคัดกรอง</div>";
+        h += (d.today && d.today.length)
+          ? "<div class='qa-sub'>นัดเริ่ม 09:00 น. — ผู้จองจะแสดงเลขอ้างอิงที่จุดคัดกรอง</div>" + todayRows
+          : "<div class='qa-row'>วันนี้ไม่มีนัดคิวออนไลน์ ✅</div>";
+      } else { // oversight
+        h = "<div class='qa-title'>👑 ภาพรวมคิวออนไลน์ · หัวหน้างาน OSS</div>";
+        var parts = [];
+        if (d.unassigned > 0) parts.push("<div class='qa-row'>🆕 ยังไม่มีเจ้าหน้าที่รับ <b>" + d.unassigned + " คิว</b> (ระบบจะแจกเมื่อเจ้าหน้าที่เช็กอิน)</div>");
+        if ((d.unclaimed || []).length) parts.push("<div class='qa-row'>⏳ รอกดรับ: <b>" + d.unclaimed.map(function(x){ return esc(x.nick) + " " + x.n; }).join(" · ") + "</b></div>");
+        if (d.waiting_applicant > 0) parts.push("<div class='qa-row'>💬 รอผู้จองตอบกลับ <b>" + d.waiting_applicant + " คิว</b></div>");
+        if ((d.to_confirm || []).length) parts.push("<div class='qa-row'>✅ ผู้จองพร้อมแล้ว รอกด “ยืนยันรับคิว”: <b>" + d.to_confirm.map(function(x){ return esc(x.nick) + " " + x.n; }).join(" · ") + "</b></div>");
+        if (d.today && d.today.length) parts.push("<div class='qa-row' style='margin-top:4px'><b>📅 นัดวันนี้ " + d.today.length + " คิว (เริ่ม 09:00 น.)</b></div>" + todayRows);
+        h += parts.length ? parts.join("") + "<div class='qa-sub' style='margin-top:6px'>ฝากช่วยเตือนเจ้าหน้าที่ให้ดำเนินการด้วยนะครับ</div>"
+                          : "<div class='qa-row'>วันนี้ไม่มีคิวออนไลน์ค้าง ✅ ระบบทำงานปกติ</div>";
+      }
+      el.innerHTML = h;
       el.classList.remove("hidden");
     }).catch(function(){});
   }
@@ -1504,6 +1545,7 @@
     showMedalBadge("result", data.daily_rank);
     loadMotto("resultMotto");
     loadQueueAlert(data.officerId, "result");
+    loadQueueWatch(data.officerId, data.pin, "result");
     loadMyStats(data.officerId, data.pin, "result");
     loadMyPraise(data.officerId, data.pin, "result");
 
