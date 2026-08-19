@@ -276,6 +276,7 @@
       <a href="#group-daily">📋 ประจำวัน</a>
       <a href="#group-feedback">💬 เสียงประชาชน</a>
       <a href="#group-reports">📊 รายงาน</a>
+      <a href="#group-queue">🌐 จองคิว</a>
       <a href="#group-settings">⚙️ ตั้งค่า</a>
     </nav>
 
@@ -376,6 +377,19 @@
           <div id="remarkSummaryWrap"></div>
         </div>
         <div id="histTableWrap"><div class="center">เลือกช่วงวันที่แล้วกด "ค้นหา"</div></div>
+      </div>
+    </div>
+
+
+    <!-- ================= จองคิวออนไลน์ (booking.rayongimm.link) — รอบ 18 ================= -->
+    <div id="group-queue" class="group-section">
+      <h3 class="group-heading">🌐 จองคิวออนไลน์</h3>
+      <div class="card">
+        <div class="topbar">
+          <h2>ภาพรวมระบบจองคิวออนไลน์</h2>
+          <a class="btn-small" href="https://booking.rayongimm.link/queue.html" target="_blank" rel="noopener" style="text-decoration:none">🛠️ เปิดหน้าจัดการคิว (โยกคิว/สวิตช์) →</a>
+        </div>
+        <div id="qdBody"><div class="center">กำลังโหลดข้อมูลคิว...</div></div>
       </div>
     </div>
 
@@ -632,6 +646,7 @@
       renderSupervisorsMgmt(res.data);
       populateFeedbackCounterFilter();
       loadFeedback();
+      loadQueueBlock();
       var today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
       document.getElementById("histStart").value = today;
       document.getElementById("histEnd").value = today;
@@ -1958,7 +1973,105 @@
       checkSupervisorThenLoad();
     }
   });
+  // ================= จองคิวออนไลน์ (รอบ 18) — โหลด + รีเฟรชทุก 5 นาที =================
+  var qdTimer = null;
+  function qdEsc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+  function renderQueueBlock(d){
+    var el = document.getElementById("qdBody"); if (!el) return;
+    var s = d.summary || {};
+    function chip(label, val, color){
+      return '<div style="flex:1;min-width:110px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;text-align:center">' +
+        '<div style="font-size:22px;font-weight:800;color:' + (color || "#1e3a8a") + '">' + val + '</div>' +
+        '<div style="font-size:11.5px;color:#64748b;margin-top:2px">' + label + '</div></div>';
+    }
+    var unclaimedN = (s.unclaimed || []).reduce(function(a, x){ return a + (x.n || 0); }, 0);
+    var toConfirmN = (s.to_confirm || []).reduce(function(a, x){ return a + (x.n || 0); }, 0);
+    var pendingN = (s.unassigned || 0) + unclaimedN + (s.waiting_applicant || 0) + toConfirmN;
+    var h = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
+      chip("นัดวันนี้", s.today_appts || 0, "#166534") +
+      chip("รอดำเนินการ", pendingN, pendingN ? "#b45309" : "#1e3a8a") +
+      chip("ยืนยันรับคิวสะสม", s.confirmed || 0) +
+      chip("จองสะสม", s.total || 0) +
+      chip("ผู้เข้าชมเว็บวันนี้", (d.visits && d.visits.today) || 0, "#7c3aed") + '</div>';
+
+    // คิวรอดำเนินการแยกช่อง
+    var pend = [];
+    if (s.unassigned > 0) pend.push("🆕 ยังไม่มีคนรับ <b>" + s.unassigned + "</b>");
+    if (unclaimedN > 0) pend.push("⏳ รอกดรับ: <b>" + (s.unclaimed || []).map(function(x){ return qdEsc(x.nick) + " " + x.n; }).join(" · ") + "</b>");
+    if (s.waiting_applicant > 0) pend.push("💬 รอผู้จองตอบ <b>" + s.waiting_applicant + "</b>");
+    if (toConfirmN > 0) pend.push("✅ รอกดยืนยันรับคิว: <b>" + (s.to_confirm || []).map(function(x){ return qdEsc(x.nick) + " " + x.n; }).join(" · ") + "</b>");
+    if (pend.length) h += '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px">' + pend.join(" &nbsp;·&nbsp; ") + '</div>';
+
+    // นัดวันนี้ + 7 วัน
+    var up = d.upcoming || [];
+    h += '<h4 style="margin:10px 0 6px;font-size:14px">📅 นัดวันนี้ + 7 วันข้างหน้า (' + up.length + ' คิว)</h4>';
+    if (!up.length) h += '<div style="font-size:13px;color:#64748b;margin-bottom:10px">ไม่มีนัดในช่วงนี้</div>';
+    else {
+      h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px">' +
+        '<tr style="background:#f1f5f9"><th style="padding:6px 8px;text-align:left">วันนัด</th><th style="padding:6px 8px;text-align:left">อ้างอิง</th><th style="padding:6px 8px;text-align:left">ผู้จอง</th><th style="padding:6px 8px;text-align:left">ประเภท</th><th style="padding:6px 8px;text-align:left">สถานะ</th><th style="padding:6px 8px;text-align:left">เจ้าของคิว</th></tr>';
+      var stTh = { submitted: "รอจ่ายคิว", assigned: "รอกดรับ", claimed: "กำลังตรวจ", confirmed: "ยืนยันแล้ว" };
+      up.forEach(function(q){
+        var warn = q.is_today && q.officer_in_today === false;
+        h += '<tr style="border-bottom:1px solid #e2e8f0' + (warn ? ';background:#fef2f2' : '') + '">' +
+          '<td style="padding:6px 8px;white-space:nowrap">' + qdEsc(q.date) + (q.is_today ? ' <b style="color:#166534">(วันนี้)</b>' : '') + '</td>' +
+          '<td style="padding:6px 8px;font-family:monospace">' + qdEsc(q.ref) + '</td>' +
+          '<td style="padding:6px 8px">' + qdEsc(q.name) + '</td>' +
+          '<td style="padding:6px 8px">' + qdEsc(q.visa) + '</td>' +
+          '<td style="padding:6px 8px">' + qdEsc(stTh[q.status] || q.status) + '</td>' +
+          '<td style="padding:6px 8px">' + qdEsc(q.officer) + (warn ? ' <b style="color:#b91c1c">⚠️ ยังไม่เช็คอินวันนี้</b>' : '') + '</td></tr>';
+      });
+      h += '</table></div>';
+    }
+
+    // เจ้าหน้าที่รับคิว
+    var offs = d.officers || [];
+    if (offs.length) h += '<div style="font-size:12.5px;color:#475569;margin-bottom:10px">👮 เจ้าหน้าที่รับคิวออนไลน์: ' +
+      offs.map(function(o){ return qdEsc(o.nick) + (o.in_today ? " ✅" : " (ยังไม่เช็คอินวันนี้)") + " ถือ " + (o.load || 0); }).join(" · ") + '</div>';
+
+    // สถิติรายเดือน
+    var mo = d.monthly || [];
+    if (mo.length) {
+      h += '<h4 style="margin:10px 0 6px;font-size:14px">📈 สถิติรายเดือน</h4>' +
+        '<div style="overflow-x:auto"><table style="width:100%;max-width:560px;border-collapse:collapse;font-size:12.5px;margin-bottom:10px">' +
+        '<tr style="background:#f1f5f9"><th style="padding:6px 8px;text-align:left">เดือน</th><th style="padding:6px 8px">จองเข้ามา</th><th style="padding:6px 8px">ยืนยันรับคิว</th><th style="padding:6px 8px">ไม่มาตามนัด</th><th style="padding:6px 8px">ยกเลิก</th><th style="padding:6px 8px">หมดอายุ</th></tr>';
+      mo.forEach(function(m){
+        h += '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px 8px">' + qdEsc(m.month) + '</td>' +
+          '<td style="padding:6px 8px;text-align:center">' + (m.booked || 0) + '</td><td style="padding:6px 8px;text-align:center">' + (m.confirmed || 0) + '</td>' +
+          '<td style="padding:6px 8px;text-align:center">' + (m.no_show || 0) + '</td><td style="padding:6px 8px;text-align:center">' + (m.cancelled || 0) + '</td>' +
+          '<td style="padding:6px 8px;text-align:center">' + (m.expired || 0) + '</td></tr>';
+      });
+      h += '</table></div>';
+    }
+
+    // เว็บ + โหวต
+    var vs = d.visits || {};
+    h += '<div style="font-size:12.5px;color:#475569;margin-bottom:8px">👁 ผู้เข้าชมเว็บจอง: วันนี้ <b>' + (vs.today || 0) + '</b> · 7 วัน <b>' + (vs.week || 0) + '</b> · รวม <b>' + (vs.total || 0) + '</b></div>';
+    var votes = d.votes || [];
+    if (votes.length || (d.suggestions || []).length) {
+      h += '<details style="margin-bottom:6px"><summary style="font-size:13px;font-weight:600;color:#92400e;cursor:pointer">🗳️ ประชาชนอยากให้เปิดจองอะไรต่อ (' + (d.votes_total || 0) + ' โหวต) + ข้อเสนอ</summary>' +
+        '<div style="padding:8px 4px;font-size:12.5px">' +
+        votes.slice(0, 5).map(function(v){ return qdEsc(v.name) + " <b>" + v.n + "</b>" + (v.open ? " (เปิดแล้ว)" : ""); }).join(" · ") +
+        (d.suggestions || []).map(function(sg){ return '<div style="border-top:1px solid #f1f5f9;padding:5px 0;color:#475569"><b style="color:#92400e">' + qdEsc(sg.visa) + '</b> · ' + qdEsc(sg.note) + ' <span style="color:#94a3b8;font-size:10.5px">' + qdEsc(sg.at) + '</span></div>'; }).join("") +
+        '</div></details>';
+    }
+    h += '<div style="font-size:11px;color:#94a3b8">อัปเดตอัตโนมัติทุก 5 นาที · การจัดการ (โยกคิว/สวิตช์รายคน) ทำที่ปุ่ม "เปิดหน้าจัดการคิว" ด้านบน</div>';
+    el.innerHTML = h;
+  }
+  function loadQueueBlock(){
+    var el = document.getElementById("qdBody"); if (!el) return;
+    sb.rpc("do_queue_dashboard_auth").then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) {
+        el.innerHTML = '<div style="font-size:13px;color:#64748b">โหลดข้อมูลคิวไม่ได้ (' + qdEsc((res.data && res.data.error) || (res.error && res.error.message) || "ไม่ทราบสาเหตุ") + ') — ดูได้ที่ <a href="https://booking.rayongimm.link/queue.html" target="_blank" rel="noopener">หน้าจัดการคิว</a></div>';
+        return;
+      }
+      renderQueueBlock(res.data);
+      if (!qdTimer) qdTimer = setInterval(loadQueueBlock, 5 * 60 * 1000);
+    }).catch(function(){ el.innerHTML = '<div style="font-size:13px;color:#64748b">โหลดข้อมูลคิวไม่ได้</div>'; });
+  }
+
+
 })();
+
 </script>
 </body>
 </html>
