@@ -103,6 +103,17 @@
   .queue-alert.watch{background:#FFFBEB; border-color:#C8A146; color:#6B5A2E;}
   .queue-alert.watch .qa-row{padding:3px 0; font-size:14px;}
   .queue-alert.watch .qa-sub{font-size:12.5px; color:#8A6A1E; margin-top:2px;}
+  /* แบนเนอร์ทางเข้าหน้าจัดการคิวออนไลน์ (หน้าล็อกอิน) — navy+ทอง ชุดสีเดียวกับระบบคิว */
+  .queue-promo{display:flex; align-items:center; gap:12px; margin:0 0 10px; padding:14px 16px; border-radius:16px; text-decoration:none;
+    background:linear-gradient(130deg,#041A3A 0%,#062B59 58%,#031832 100%); border:1.5px solid #C89D3C; color:#fff;
+    box-shadow:0 10px 24px rgba(2,20,45,.18);}
+  .queue-promo .qp-ico{font-size:26px; line-height:1; flex:none;}
+  .queue-promo .qp-txt{display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;}
+  .queue-promo .qp-txt b{font-size:16px; font-weight:800; color:#F6C756;}
+  .queue-promo .qp-txt span{font-size:12.5px; color:#7DD3FC; line-height:1.45;}
+  .queue-promo .qp-go{flex:none; font-size:20px; font-weight:800; color:#E7B64E;}
+  .queue-promo:active{transform:scale(.99);}
+  .queue-promo:focus-visible{outline:3px solid #60a5fa; outline-offset:3px;}
 
   /* ป้ายระดับเช็คเอาต์ตอนเย็น (P1.4) — อยู่เย็น/อยู่ดึก */
   .tier-badge{
@@ -220,6 +231,16 @@
     <!-- แบนเนอร์น้องริมมี่ (Rimmi for Officer) — โค้ดต้นฉบับ กู้จาก Netlify deploy 6a5c52a9 -->
     <a class="rimmi-promo" href="https://rimmiforofficer.netlify.app/#" target="_blank" rel="noopener noreferrer" aria-label="เปิด Rimmi for Officer ในหน้าต่างใหม่">
       <img class="promo-approved-art" src="rimmi-approved-mockup.png" alt="น้องริมมี่ ผู้ช่วยเบื้องหลัง ค้นกฎหมาย ระเบียบ คำสั่ง และงานขออยู่ต่อ">
+    </a>
+
+    <!-- ทางเข้าหน้าจัดการคิวจองออนไลน์ — เห็นทุกวันแม้ยังไม่เช็กอิน (กล่องหลังเช็กอินขึ้นเฉพาะวันที่มีคิว) -->
+    <a class="queue-promo" href="https://booking.rayongimm.link/queue.html" target="_blank" rel="noopener noreferrer">
+      <span class="qp-ico">📥</span>
+      <span class="qp-txt">
+        <b>คิวจองออนไลน์ของฉัน</b>
+        <span>กดรับคิว · ขอเอกสารเพิ่ม · ยืนยันรับคิว</span>
+      </span>
+      <span class="qp-go">→</span>
     </a>
   </section>
 
