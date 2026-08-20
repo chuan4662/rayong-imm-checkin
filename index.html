@@ -86,6 +86,15 @@
   .medal-box.gold{background:linear-gradient(135deg,#fde68a,#d97706); color:#78350f;}
   .medal-box.silver{background:linear-gradient(135deg,#f3f4f6,#9ca3af); color:#1f2937;}
 
+  /* ป้ายเหลื่อมเวลา — คนชุดหลังของกลุ่มงานที่หัวหน้าเปิดสิทธิ์ไว้ (migration 32) */
+  .stagger-box{
+    margin-top:14px; padding:12px 16px; border-radius:12px;
+    background:#ecfeff; border:2px solid #0891b2; color:#155e75;
+    text-align:left; font-size:15px; line-height:1.55; font-weight:600;
+  }
+  .stagger-box .sg-title{font-weight:800; display:block; margin-bottom:2px;}
+  .stagger-box .sg-sub{font-weight:500; font-size:13.5px; color:#0e7490;}
+
   /* กล่องแจ้งเตือนคิวจองออนไลน์ (booking.rayongimm.link) — แสดงหลังเช็กอินเมื่อมีคิวรอ */
   .queue-alert{margin-top:14px; padding:14px 16px; border-radius:12px; background:#eff6ff; border:2px solid #1d4ed8; color:#1e3a8a; text-align:left; font-size:15px; line-height:1.6;}
   .queue-alert .qa-title{font-weight:800; font-size:16px; margin-bottom:4px;}
@@ -277,6 +286,7 @@
     <button class="btn-primary" id="btnDone">เสร็จสิ้น</button>
 
     <div id="resultMedalBox" class="medal-box hidden"></div>
+    <div id="resultStaggerBox" class="stagger-box hidden"></div>
 
     <div class="motto-box">
       <div class="motto-label">📢 Rayong Immigration Service</div>
@@ -294,6 +304,7 @@
       <div class="stats-flag-row brown"><span>🟤 ขาดเช็กอิน</span><span class="count" id="resultStatAbsent">-</span></div>
       <div class="stats-flag-row" style="color:#b45309;"><span>🥇 เป็นที่ 1 ของวัน</span><span class="count" id="resultStatGold">-</span></div>
       <div class="stats-flag-row" style="color:#6b7280;"><span>🥈 เป็นที่ 2 ของวัน</span><span class="count" id="resultStatSilver">-</span></div>
+      <div class="stats-flag-row hidden" id="resultStatStaggerRow" style="color:#0e7490;"><span>⏱ ได้ผ่อนผันเหลื่อมเวลา <small style="font-weight:400;">(นับรวมในสีด้านบนแล้ว)</small></span><span class="count" id="resultStatStagger">-</span></div>
       <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="resultStatTotal">-</span></div>
     </div>
 
@@ -339,6 +350,7 @@
     <button class="btn-primary" id="btnDoneAlready">ตกลง</button>
 
     <div id="alreadyMedalBox" class="medal-box hidden"></div>
+    <div id="alreadyStaggerBox" class="stagger-box hidden"></div>
 
     <div class="motto-box">
       <div class="motto-label">📢 Rayong Immigration Service</div>
@@ -356,6 +368,7 @@
       <div class="stats-flag-row brown"><span>🟤 ขาดเช็กอิน</span><span class="count" id="alreadyStatAbsent">-</span></div>
       <div class="stats-flag-row" style="color:#b45309;"><span>🥇 เป็นที่ 1 ของวัน</span><span class="count" id="alreadyStatGold">-</span></div>
       <div class="stats-flag-row" style="color:#6b7280;"><span>🥈 เป็นที่ 2 ของวัน</span><span class="count" id="alreadyStatSilver">-</span></div>
+      <div class="stats-flag-row hidden" id="alreadyStatStaggerRow" style="color:#0e7490;"><span>⏱ ได้ผ่อนผันเหลื่อมเวลา <small style="font-weight:400;">(นับรวมในสีด้านบนแล้ว)</small></span><span class="count" id="alreadyStatStagger">-</span></div>
       <div class="stats-total"><span>รวมเช็กอินเดือนนี้</span><span id="alreadyStatTotal">-</span></div>
     </div>
 
@@ -1196,6 +1209,7 @@
     document.getElementById("alreadyGpsWarning").classList.add("hidden");
     document.getElementById("alreadyPurpleBadge").classList.add("hidden");
     document.getElementById("alreadyMedalBox").className = "medal-box hidden";
+    document.getElementById("alreadyStaggerBox").className = "stagger-box hidden";
 
     remarkState.already = { officerId: officerId, pin: pin };
     resetRemarkBox("already"); // ค่าเริ่มต้น เผื่อดึงสถานะไม่สำเร็จ — จะถูกแทนที่ด้วยของจริงถ้ามีหมายเหตุอยู่แล้วด้านล่าง
@@ -1215,6 +1229,7 @@
       badge.textContent = s.emoji + " " + s.text + " (เช็กอินไปแล้ว)";
       document.getElementById("alreadyPurpleBadge").classList.toggle("hidden", !data.incomplete);
       showMedalBadge("already", data.daily_rank);
+      showStaggerBadge("already", data);
 
       var t = new Date(data.time);
       document.getElementById("alreadyTime").textContent = t.toLocaleString("th-TH", {
@@ -1312,6 +1327,23 @@
     }
   }
 
+  // ================= ป้ายเหลื่อมเวลา (migration 32) =================
+  // แสดงเฉพาะเมื่อ backend ตัดสินว่า "การผ่อนผันเปลี่ยนสีจริง" (stagger_applied = true)
+  // คนที่มาเช้าอยู่แล้วจะไม่ถูกติดป้าย แม้กลุ่มจะเปิดสิทธิ์ไว้ก็ตาม
+  function showStaggerBadge(prefix, data){
+    var el = document.getElementById(prefix + "StaggerBox");
+    if (!el) return;
+    if (!data || data.stagger_applied !== true) { el.className = "stagger-box hidden"; return; }
+    var mins = data.stagger_minutes;
+    var grp  = data.work_group_name;
+    var head = "⏱ วันนี้คุณอยู่ชุดเหลื่อมเวลา";
+    var sub  = grp
+      ? ("กลุ่ม" + grp + " มีคนเปิดเคาน์เตอร์ทันเวลาแล้ว ระบบจึงคิดเกณฑ์เวลาให้คุณ" + (mins ? " +" + mins + " นาที" : ""))
+      : "กลุ่มของคุณมีคนเปิดเคาน์เตอร์ทันเวลาแล้ว ระบบจึงคิดเกณฑ์เวลาให้ตามรอบเหลื่อมเวลา";
+    el.innerHTML = "<span class='sg-title'>" + head + "</span><span class='sg-sub'>" + sub + "</span>";
+    el.className = "stagger-box";
+  }
+
   // ================= ม็อตโต้ + สถิติส่วนตัวรายเดือน (แสดงหลังเช็กอินเสร็จเท่านั้น) =================
   function loadMotto(targetElId){
     var el = document.getElementById(targetElId);
@@ -1346,6 +1378,13 @@
       if (goldEl) goldEl.textContent = (d.gold_count || 0) + " ครั้ง";
       var silverEl = document.getElementById(prefix + "StatSilver");
       if (silverEl) silverEl.textContent = (d.silver_count || 0) + " ครั้ง";
+      var staggerEl = document.getElementById(prefix + "StatStagger");
+      var staggerRow = document.getElementById(prefix + "StatStaggerRow");
+      if (staggerEl && staggerRow) {
+        var sc = d.stagger_count || 0;
+        staggerEl.textContent = sc + " ครั้ง";
+        staggerRow.classList.toggle("hidden", sc === 0); // ไม่เคยได้ผ่อนผัน = ซ่อนแถวไปเลย
+      }
       document.getElementById(prefix + "StatTotal").textContent = d.total + " ครั้ง";
       // ถ้าแอดมินตั้งวันเริ่มนับของเดือนนี้ไว้ไม่ใช่วันที่ 1 ให้โชว์วงเล็บกำกับต่อท้ายป้ายเดือน
       if (monthLabelEl && d.count_start_date) {
@@ -1543,6 +1582,7 @@
     showScreen("result");
 
     showMedalBadge("result", data.daily_rank);
+    showStaggerBadge("result", data);
     loadMotto("resultMotto");
     loadQueueAlert(data.officerId, "result");
     loadQueueWatch(data.officerId, data.pin, "result");
@@ -1565,6 +1605,7 @@
     pendingSubmit = null;
     document.getElementById("incompleteModal").classList.add("hidden");
     document.getElementById("resultMedalBox").className = "medal-box hidden";
+    document.getElementById("resultStaggerBox").className = "stagger-box hidden";
     // (P1.4) รีเซ็ต state เช็คเอาต์ตอนเย็นกลับสภาพเดิมทุกครั้งที่กลับไปหน้า login
     checkoutMode = false;
     pendingCheckoutOfficerId = null;

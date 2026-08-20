@@ -204,7 +204,8 @@
     /* จัดการกลุ่มงาน OT */
     #groupsMgmtWrap table td:nth-child(1)::before{content:"ชื่อกลุ่ม";}
     #groupsMgmtWrap table td:nth-child(2)::before{content:"Badge OT";}
-    #groupsMgmtWrap table td:nth-child(3)::before{content:"จำนวนสมาชิก";}
+    #groupsMgmtWrap table td:nth-child(3)::before{content:"เหลื่อมเวลา";}
+    #groupsMgmtWrap table td:nth-child(4)::before{content:"จำนวนสมาชิก";}
 
     /* วันหยุดนักขัตฤกษ์ */
     #holidaysWrap table td:nth-child(1)::before{content:"วันที่";}
@@ -503,6 +504,11 @@
         <div class="filter-row" style="margin-bottom:0;">
           <div><label style="font-weight:400; font-size:13px;">เปิดให้เช็กอินตั้งแต่</label><input type="time" id="settingsCheckinOpenAfter"></div>
         </div>
+        <label style="margin-top:20px;">⏱ ผ่อนผันเวลาให้ "ชุดหลัง" ของกลุ่มที่เปิดเหลื่อมเวลา</label>
+        <div class="filter-row" style="margin-bottom:0;">
+          <div><label style="font-weight:400; font-size:13px;">เลื่อนเกณฑ์สีให้ (นาที)</label><input type="number" id="settingsStaggerMinutes" min="0" max="120" step="5"></div>
+          <div style="align-self:end; font-size:12.5px; color:#6b7280; line-height:1.5;">ใช้กับกลุ่มที่ติ๊ก "เหลื่อมเวลา" ไว้เท่านั้น<br>(ตั้งกลุ่มไหนเปิด/ปิด ได้ที่การ์ดจัดการกลุ่มงาน)</div>
+        </div>
         <div id="settingsError" class="error-box hidden"></div>
         <div id="settingsSuccess" class="success-box hidden">บันทึกการตั้งค่าเรียบร้อยแล้ว</div>
         <button class="btn-primary" id="btnSaveSettings" style="width:auto; padding:10px 24px;">บันทึกการตั้งค่า</button>
@@ -734,7 +740,7 @@
       new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day:"numeric", month:"long", year:"numeric" });
 
     sb.from("check_in")
-      .select("id, officer_id, checked_in_at, status, override_status, distance_m, ready_for_duty, note, remark, photo_path, incomplete_checkin, override_reason, override_at, retention_hold, photo_deleted_at, daily_rank, officer!check_in_officer_id_fkey(full_name, rank_title, nickname), override_by_officer:officer!check_in_override_by_fkey(full_name)")
+      .select("id, officer_id, checked_in_at, status, override_status, distance_m, ready_for_duty, note, remark, photo_path, incomplete_checkin, override_reason, override_at, retention_hold, photo_deleted_at, daily_rank, stagger_applied, officer!check_in_officer_id_fkey(full_name, rank_title, nickname), override_by_officer:officer!check_in_override_by_fkey(full_name)")
       .eq("local_date", todayStr)
       .order("checked_in_at", { ascending: true })
       .then(function(res){
@@ -772,6 +778,7 @@
             time: new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }),
             status: statusMap[r.override_status || r.status] ? statusMap[r.override_status || r.status].text : (r.override_status || r.status),
             incomplete: r.incomplete_checkin ? "ไม่สมบูรณ์" : "",
+            stagger: r.stagger_applied ? "เหลื่อมเวลา" : "",
             distance: r.distance_m,
             note: r.note || "",
             remark: r.remark || "",
@@ -876,6 +883,7 @@
       var holdTag = r.retention_hold ? ' <span class="badge gray">🔒 กันลบรูป</span>' : '';
       var medalTag = r.daily_rank === 1 ? ' <span class="badge gray" style="background:#d97706;">🥇 คนแรก</span>'
         : r.daily_rank === 2 ? ' <span class="badge gray" style="background:#9ca3af;">🥈 คนที่สอง</span>' : '';
+      var staggerTag = r.stagger_applied ? ' <span class="badge gray" style="background:#0891b2;">⏱ เหลื่อมเวลา</span>' : '';
       var overrideByName = getOverrideByName(r);
       var overrideInfo = r.override_status
         ? '<span class="override-info">แก้ไขโดย ' + escapeHtml(overrideByName || "-") +
@@ -905,7 +913,7 @@
         dateStr +
         '<td>' + escapeHtml(name) + '</td>' +
         '<td>' + timeStr + '</td>' +
-        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + medalTag + overrideInfo + '</td>' +
+        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + medalTag + staggerTag + overrideInfo + '</td>' +
         '<td>' + distStr + '</td>' +
         '<td>' + readyStr + '</td>' +
         '<td class="note-cell">' + escapeHtml(r.note || "-") + '</td>' +
@@ -1124,6 +1132,7 @@
           time: new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }),
           status: statusMap[r.effective_status] ? statusMap[r.effective_status].text : r.effective_status,
           incomplete: r.incomplete_checkin ? "ไม่สมบูรณ์" : "",
+          stagger: r.stagger_applied ? "เหลื่อมเวลา" : "",
           distance: r.distance_m,
           note: r.note || "",
           remark: r.remark || "",
@@ -1166,7 +1175,7 @@
     if (!rows || rows.length === 0) { alert("ไม่มีข้อมูลให้ export"); return; }
     var headerMap = [
       ["date", "วันที่"], ["name", "ชื่อ"], ["time", "เวลา"], ["status", "สถานะ"],
-      ["incomplete", "หมายเหตุระบบ"], ["distance", "ระยะห่าง (ม.)"], ["note", "หมายเหตุ"],
+      ["incomplete", "หมายเหตุระบบ"], ["stagger", "เหลื่อมเวลา"], ["distance", "ระยะห่าง (ม.)"], ["note", "หมายเหตุ"],
       ["remark", "หมายเหตุเพิ่มเติม"],
       ["override_by", "แก้ไขโดย"], ["override_reason", "เหตุผลแก้ไข"]
     ];
@@ -1386,15 +1395,19 @@
       wrap.innerHTML = '<div class="center">ยังไม่มีกลุ่มงาน — เพิ่มด้านบนได้เลย</div>';
       return;
     }
-    var html = '<table><thead><tr><th>ชื่อกลุ่ม</th><th>Badge OT</th><th>จำนวนสมาชิก</th><th></th></tr></thead><tbody>';
+    var html = '<table><thead><tr><th>ชื่อกลุ่ม</th><th>Badge OT</th><th>เหลื่อมเวลา</th><th>จำนวนสมาชิก</th><th></th></tr></thead><tbody>';
     allWorkGroups.forEach(function(g){
       html += '<tr>' +
         '<td>' + escapeHtml(g.name) + '</td>' +
         '<td>' + (g.is_ot_team ? '<span class="badge green">🟢 แสดง</span>' : '<span class="muted">ไม่แสดง</span>') + '</td>' +
+        '<td>' + (g.stagger_enabled
+            ? '<span class="badge green">🟢 เปิด</span> <span class="muted" style="font-size:12px;">ชุดแรก ' + (g.core_min_count || 1) + ' คน ก่อน ' + String(g.core_open_before || "").slice(0,5) + '</span>'
+            : '<span class="muted">ปิด</span>') + '</td>' +
         '<td>' + g.member_count + '</td>' +
         '<td style="white-space:nowrap;">' +
           '<button class="btn-row-action" data-group-rename="' + g.id + '">แก้ชื่อ</button> ' +
           '<button class="btn-row-action" data-group-toggle="' + g.id + '" data-toggle-to="' + (!g.is_ot_team) + '">' + (g.is_ot_team ? "ปิด badge" : "เปิด badge") + '</button> ' +
+          '<button class="btn-row-action" data-stagger-cfg="' + g.id + '">' + (g.stagger_enabled ? "⏱ แก้เหลื่อมเวลา" : "⏱ เปิดเหลื่อมเวลา") + '</button> ' +
           '<button class="btn-danger-small" data-group-delete="' + g.id + '">ลบกลุ่ม</button>' +
         '</td>' +
         '</tr>';
@@ -1439,6 +1452,66 @@
           }
           loadWorkGroups();
           loadTeamCoverage();
+        });
+      });
+    });
+
+    // ⏱ ตั้งค่าเหลื่อมเวลารายกลุ่ม (migration 32)
+    // ถามเป็นขั้นๆ ด้วย prompt แบบเดียวกับ "แก้ชื่อกลุ่ม" ที่ใช้อยู่แล้ว — ไม่เพิ่มรูปแบบ UI ใหม่ให้ต้องเรียนรู้
+    wrap.querySelectorAll("button[data-stagger-cfg]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-stagger-cfg");
+        var g = allWorkGroups.filter(function(x){ return x.id === id; })[0];
+        if (!g) return;
+
+        var onNow = !!g.stagger_enabled;
+        var wantOn = confirm(
+          "กลุ่ม " + g.name + "\n\n" +
+          "ตอนนี้เหลื่อมเวลา: " + (onNow ? "เปิดอยู่" : "ปิดอยู่") + "\n\n" +
+          "กด OK = เปิดใช้/แก้ไขค่า\nกด Cancel = ปิดการเหลื่อมเวลาของกลุ่มนี้"
+        );
+
+        var payload = { p_id: id, p_name: g.name, p_is_ot_team: g.is_ot_team };
+        if (!wantOn) {
+          payload.p_stagger_enabled = false;
+        } else {
+          var t = prompt(
+            "ชุดแรกของกลุ่ม " + g.name + " ต้องเช็กอินให้ทันก่อนเวลาใด?\n" +
+            "(รูปแบบ HH:MM เช่น 08:30 — คนที่เหลือจึงจะได้ผ่อนผัน)",
+            String(g.core_open_before || "08:30").slice(0,5)
+          );
+          if (t === null) return;
+          t = t.trim();
+          if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) { alert("รูปแบบเวลาไม่ถูกต้อง ต้องเป็น HH:MM เช่น 08:30"); return; }
+
+          var c = prompt(
+            "ต้องมีคนมาทันก่อน " + t + " กี่คน ถึงจะปลดล็อกให้คนที่เหลือ?\n" +
+            "(ปกติ 1 คน = มีคนเปิดเคาน์เตอร์คนเดียวก็พอ)",
+            String(g.core_min_count || 1)
+          );
+          if (c === null) return;
+          c = parseInt(String(c).trim(), 10);
+          if (!(c >= 1)) { alert("จำนวนคนต้องเป็นตัวเลขตั้งแต่ 1 ขึ้นไป"); return; }
+
+          payload.p_stagger_enabled = true;
+          payload.p_core_open_before = t + ":00";
+          payload.p_core_min_count = c;
+        }
+
+        sb.rpc("do_admin_update_work_group", payload).then(function(res){
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            var msgMap = {
+              duplicate_name: "มีชื่อกลุ่มนี้อยู่แล้ว",
+              name_required: "กรุณากรอกชื่อกลุ่ม",
+              group_not_found: "ไม่พบกลุ่มนี้",
+              invalid_core_min_count: "จำนวนคนชุดแรกต้องอย่างน้อย 1 คน",
+              not_supervisor: "ไม่มีสิทธิ์"
+            };
+            alert("บันทึกไม่สำเร็จ: " + (msgMap[code] || code));
+            return;
+          }
+          loadWorkGroups();
         });
       });
     });
@@ -1638,6 +1711,7 @@
       document.getElementById("settingsOrangeBefore").value = String(res.data.orange_before).slice(0, 5);
       document.getElementById("settingsAbsentCutoff").value = String(res.data.absent_cutoff_time).slice(0, 5);
       document.getElementById("settingsCheckinOpenAfter").value = String(res.data.checkin_open_after).slice(0, 5);
+      document.getElementById("settingsStaggerMinutes").value = (res.data.stagger_minutes === null || res.data.stagger_minutes === undefined) ? 30 : res.data.stagger_minutes;
     });
   }
 
@@ -1653,6 +1727,13 @@
     var orange = document.getElementById("settingsOrangeBefore").value;
     var cutoff = document.getElementById("settingsAbsentCutoff").value;
     var openAfter = document.getElementById("settingsCheckinOpenAfter").value;
+    var staggerMinsRaw = document.getElementById("settingsStaggerMinutes").value;
+    var staggerMins = parseInt(staggerMinsRaw, 10);
+    if (isNaN(staggerMins) || staggerMins < 0 || staggerMins > 120) {
+      errEl.textContent = "เวลาผ่อนผันต้องเป็นตัวเลข 0-120 นาที";
+      errEl.classList.remove("hidden");
+      return;
+    }
     if (isNaN(lat) || isNaN(lng) || !green || !yellow || !orange || !cutoff || !openAfter) {
       errEl.textContent = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
       errEl.classList.remove("hidden");
@@ -1665,7 +1746,8 @@
       p_office_lat: lat, p_office_lng: lng,
       p_green_before: green + ":00", p_yellow_before: yellow + ":00",
       p_orange_before: orange + ":00", p_absent_cutoff_time: cutoff + ":00",
-      p_checkin_open_after: openAfter + ":00"
+      p_checkin_open_after: openAfter + ":00",
+      p_stagger_minutes: staggerMins
     }).then(function(res){
       btn.disabled = false;
       btn.textContent = "บันทึกการตั้งค่า";
@@ -1675,6 +1757,7 @@
           invalid_coordinates: "พิกัด GPS ไม่ถูกต้อง",
           invalid_time_order: "เวลาต้องเรียงจากน้อยไปมาก (ดีเยี่ยม < ทันพอดี < มาเลท)",
           invalid_checkin_open_time: "เวลาเปิดให้เช็กอินต้องมาก่อนเวลา \"ดีเยี่ยม\"",
+          invalid_stagger_minutes: "เวลาผ่อนผันเหลื่อมเวลาต้องอยู่ระหว่าง 0-120 นาที",
           missing_field: "กรุณากรอกข้อมูลให้ครบ",
           not_supervisor: "ไม่มีสิทธิ์แก้ไข"
         };

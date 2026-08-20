@@ -732,6 +732,7 @@
         time: new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }),
         status: statusMap[r.status] ? statusMap[r.status].text : r.status,
         incomplete: r.incomplete_checkin ? "ไม่สมบูรณ์" : "",
+        stagger: r.stagger_applied ? "เหลื่อมเวลา" : "",
         distance: r.distance_m,
         note: r.note || "",
         remark: r.remark || "",
@@ -888,6 +889,7 @@
       var holdTag = r.retention_hold ? ' <span class="badge gray">🔒 กันลบรูป</span>' : '';
       var medalTag = r.daily_rank === 1 ? ' <span class="badge gray" style="background:#d97706;">🥇 คนแรก</span>'
         : r.daily_rank === 2 ? ' <span class="badge gray" style="background:#9ca3af;">🥈 คนที่สอง</span>' : '';
+      var staggerTag = r.stagger_applied ? ' <span class="badge gray" style="background:#0891b2;">⏱ เหลื่อมเวลา</span>' : '';
       var overrideByName = getOverrideByName(r);
       var hasOverride = !!(r.override_status || r.override_reason);
       var overrideInfo = hasOverride
@@ -918,7 +920,7 @@
         dateStr +
         '<td>' + escapeHtml(name) + '</td>' +
         '<td>' + timeStr + '</td>' +
-        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + medalTag + overrideInfo + '</td>' +
+        '<td><span class="badge ' + eff + '">' + s.emoji + ' ' + s.text + '</span>' + purpleTag + holdTag + medalTag + staggerTag + overrideInfo + '</td>' +
         '<td>' + distStr + '</td>' +
         '<td>' + readyStr + '</td>' +
         '<td class="note-cell">' + escapeHtml(r.note || "-") + '</td>' +
@@ -1146,6 +1148,7 @@
           time: new Date(r.checked_in_at).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" }),
           status: statusMap[r.effective_status] ? statusMap[r.effective_status].text : r.effective_status,
           incomplete: r.incomplete_checkin ? "ไม่สมบูรณ์" : "",
+          stagger: r.stagger_applied ? "เหลื่อมเวลา" : "",
           distance: r.distance_m,
           note: r.note || "",
           remark: r.remark || "",
@@ -1178,7 +1181,7 @@
     if (!rows || rows.length === 0) { alert("ไม่มีข้อมูลให้ export"); return; }
     var headerMap = [
       ["date", "วันที่"], ["name", "ชื่อ"], ["time", "เวลา"], ["status", "สถานะ"],
-      ["incomplete", "หมายเหตุระบบ"], ["distance", "ระยะห่าง (ม.)"], ["note", "หมายเหตุ"],
+      ["incomplete", "หมายเหตุระบบ"], ["stagger", "เหลื่อมเวลา"], ["distance", "ระยะห่าง (ม.)"], ["note", "หมายเหตุ"],
       ["remark", "หมายเหตุเพิ่มเติม"],
       ["override_by", "แก้ไขโดย"], ["override_reason", "เหตุผลแก้ไข"]
     ];
