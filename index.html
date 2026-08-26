@@ -118,6 +118,9 @@
   .queue-promo .qp-go{flex:none; font-size:20px; font-weight:800; color:#E7B64E;}
   .queue-promo:active{transform:scale(.99);}
   .queue-promo:focus-visible{outline:3px solid #60a5fa; outline-offset:3px;}
+  /* แถบคิวค้างนาน — ต่อท้ายกล่องเฝ้าดูของหัวหน้างาน OSS */
+  .qa-stale{margin-top:10px; padding:10px 12px; border-radius:10px; background:#FDF2F2; border:1.5px solid #E5B8B4; color:#8A3A32;}
+  .qa-stale .qa-row{padding:3px 0; font-size:13.5px;}
 
   /* ป้ายระดับเช็คเอาต์ตอนเย็น (P1.4) — อยู่เย็น/อยู่ดึก */
   .tier-badge{
@@ -1361,6 +1364,25 @@
       }
       el.innerHTML = h;
       el.classList.remove("hidden");
+      loadStaleAlert(officerId, pin, el);   // ต่อท้ายด้วยคิวค้างนาน (ถ้ามี)
+    }).catch(function(){});
+  }
+
+  // คิวค้างนานเกินเกณฑ์ — 4 วันทำการ = เตือน · เกิน 5 วันทำการ = ระบบโยกให้คนว่างที่สุดแล้ว
+  function loadStaleAlert(officerId, pin, el){
+    if (!el) return;
+    sb.rpc("do_queue_stale", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (res.error || !res.data || res.data.ok !== true) return;
+      var items = res.data.items || [];
+      if (!items.length) return;
+      function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+      var rows = items.map(function(q){
+        return q.level >= 2
+          ? "<div class='qa-row'>🔄 <b>" + esc(q.ref) + "</b> ค้าง " + q.wd + " วันทำการ — <b>ระบบโยกให้ " + esc(q.owner) + "</b> แล้วเมื่อ " + esc(q.at) + "</div>"
+          : "<div class='qa-row'>⏰ <b>" + esc(q.ref) + "</b> ค้างกับ " + esc(q.owner) + " " + q.wd + " วันทำการ — อีก 1 วันทำการระบบจะโยกให้คนอื่น</div>";
+      }).join("");
+      el.insertAdjacentHTML("beforeend",
+        "<div class='qa-stale'><div class='qa-title' style='color:#8A3A32'>⚠️ คิวค้างนานเกินกำหนด " + items.length + " รายการ</div>" + rows + "</div>");
     }).catch(function(){});
   }
 

@@ -2085,10 +2085,12 @@
     reassign: function(id, to){ return sb.rpc("do_sup_reassign_auth", { p_booking_id: id, p_to_officer: to }); },
     cancel: function(id, reason){ return sb.rpc("do_sup_cancel_auth", { p_booking_id: id, p_reason: reason }); },
     setAccepts: function(id, val){ return sb.rpc("do_queue_set_accepts_auth", { p_target: id, p_accepts: val }); },
-    setSettings: function(en, cap, adv){ return sb.rpc("do_queue_set_settings_auth", { p_enabled: en, p_cap: cap, p_advance: adv }); }
+    setSettings: function(en, cap, adv){ return sb.rpc("do_queue_set_settings_auth", { p_enabled: en, p_cap: cap, p_advance: adv }); },
+    stale: function(){ return sb.rpc("do_queue_stale_auth"); }
   };
   // ================= จองคิวออนไลน์ (รอบ 18) — อัปเกรดรอบ 19: จัดการเต็มที่ + รีเฟรชทุก 5 นาที =================
   var qdTimer = null, qdData = null, qdState = { reassignId: null, pick: null, msg: null, msgOk: true };
+  var qdStale = [];   // คิวค้างเกินเกณฑ์ (4 วันทำการ = เตือน · เกิน 5 = ระบบโยกแล้ว)
   function qdEsc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
   var QD_ST = { submitted: "รอจ่ายคิว", assigned: "รอกดรับ", claimed: "กำลังตรวจ", confirmed: "ยืนยันแล้ว" };
 
@@ -2123,6 +2125,15 @@
     var pendingN = (s.unassigned || 0) + unclaimedN + (s.waiting_applicant || 0) + toConfirmN;
     var h = '';
     if (qdState.msg) h += '<div style="background:' + (qdState.msgOk ? "#f0fdf4;border:1px solid #86efac;color:#166534" : "#fef2f2;border:1px solid #fca5a5;color:#b91c1c") + ';border-radius:9px;padding:8px 12px;font-size:13px;margin-bottom:10px">' + qdEsc(qdState.msg) + '</div>';
+    if (qdStale.length) {
+      h += '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 12px;margin-bottom:12px">' +
+        '<div style="font-weight:800;color:#b91c1c;font-size:13.5px;margin-bottom:4px">⚠️ คิวค้างนานเกินกำหนด ' + qdStale.length + ' รายการ</div>' +
+        qdStale.map(function(q){
+          return q.level >= 2
+            ? '<div style="font-size:13px;color:#7f1d1d;padding:2px 0">🔄 <b>' + qdEsc(q.ref) + '</b> · ' + qdEsc(q.name) + ' — ค้าง ' + q.wd + ' วันทำการ · <b>ระบบโยกให้ ' + qdEsc(q.owner) + '</b> เมื่อ ' + qdEsc(q.at) + '</div>'
+            : '<div style="font-size:13px;color:#7f1d1d;padding:2px 0">⏰ <b>' + qdEsc(q.ref) + '</b> · ' + qdEsc(q.name) + ' — ค้างกับ ' + qdEsc(q.owner) + ' ' + q.wd + ' วันทำการ · อีก 1 วันทำการระบบจะโยกให้คนอื่น</div>';
+        }).join('') + '</div>';
+    }
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
       chip("นัดวันนี้", s.today_appts || 0, "#166534") +
       chip("รอดำเนินการ", pendingN, pendingN ? "#b45309" : "#1e3a8a") +
@@ -2265,6 +2276,11 @@
         return;
       }
       renderQueueBlock(res.data);
+      QDA.stale().then(function(sr){
+        if (sr.error || !sr.data || sr.data.ok !== true) return;
+        qdStale = sr.data.items || [];
+        if (qdStale.length) renderQueueBlock(qdData);   // วาดซ้ำเพื่อโชว์แถบแดง
+      }).catch(function(){});
       qdState.msg = null;
       if (!qdTimer) qdTimer = setInterval(function(){ qdState.reassignId = null; loadQueueBlock(); }, 5 * 60 * 1000);
     }).catch(function(){ el.innerHTML = '<div style="font-size:13px;color:#64748b">โหลดข้อมูลคิวไม่ได้</div>'; });
