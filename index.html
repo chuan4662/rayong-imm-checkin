@@ -103,6 +103,10 @@
   .queue-alert.watch{background:#FFFBEB; border-color:#C8A146; color:#6B5A2E;}
   .queue-alert.watch .qa-row{padding:3px 0; font-size:14px;}
   .queue-alert.watch .qa-sub{font-size:12.5px; color:#8A6A1E; margin-top:2px;}
+  /* กล่อง "มีคิวรอ แต่ระบบกันไว้ให้เพื่อนก่อน" — โทนอ่อน แจ้งอย่างเดียว ไม่มีปุ่ม */
+  .queue-alert.pending{background:#F8FAFC; border-color:#94A3B8; border-style:dashed; color:#475569;}
+  .queue-alert.pending .qa-title{color:#334155;}
+  .queue-alert.pending .qa-sub{font-size:12.5px; color:#64748B; margin-top:6px;}
   /* แบนเนอร์ทางเข้าหน้าจัดการคิวออนไลน์ (หน้าล็อกอิน) — navy+ทอง ชุดสีเดียวกับระบบคิว */
   .queue-promo{display:flex; align-items:center; gap:12px; margin:0 0 10px; padding:14px 16px; border-radius:16px; text-decoration:none;
     background:linear-gradient(130deg,#041A3A 0%,#062B59 58%,#031832 100%); border:1.5px solid #C89D3C; color:#fff;
@@ -1281,21 +1285,49 @@
 
   // ================= คิวจองออนไลน์ (booking.rayongimm.link) — แจ้งหลังเช็กอินว่ามีคิวรอดำเนินการ =================
   // prefix = "result" หรือ "already" — RPC คืนเฉพาะจำนวนคิว (ไม่มีข้อมูลส่วนบุคคล) จึงไม่ต้องใช้ PIN
+  var queueAlertTimer = null, queueAlertTries = 0;
   function loadQueueAlert(officerId, prefix){
     var el = document.getElementById(prefix + "QueueBox");
     if (!el || !officerId) return;
-    el.className = "queue-alert hidden";
     sb.rpc("do_officer_queue_badge", { p_officer_id: officerId }).then(function(res){
       if (res.error || !res.data || res.data.ok !== true) return; // ดึงไม่ได้ = ไม่โชว์ ไม่รบกวนการเช็กอิน
       var nAction = res.data.action || 0, nToday = res.data.today || 0;
-      if (!nAction && !nToday) return;
-      var html = "<div class='qa-title'>📥 คิวจองออนไลน์ของคุณ</div>";
-      if (nAction) html += "🔔 มีคิวรอคุณดำเนินการ <b>" + nAction + " คิว</b> — กดรับ / ถามข้อมูล / ยืนยันรับคิว<br>";
-      if (nToday) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + nToday + " คิว</b> เริ่ม 09:00 น.<br>";
-      html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
-      el.innerHTML = html;
-      el.classList.remove("hidden");
+      var nReserved = res.data.reserved || 0, cutoff = res.data.assign_after || "08:45";
+      el.className = "queue-alert hidden";
+      if (!nAction && !nToday && !nReserved) { stopQueueAlertPoll(); return; }
+
+      if (nAction || nToday) {
+        // มีคิวของตัวเองแล้ว → กล่องน้ำเงินเดิม + ปุ่มเข้าหน้าจัดการคิว
+        var html = "<div class='qa-title'>📥 คิวจองออนไลน์ของคุณ</div>";
+        if (nAction) html += "🔔 มีคิวรอคุณดำเนินการ <b>" + nAction + " คิว</b> — กดรับ / ถามข้อมูล / ยืนยันรับคิว<br>";
+        if (nToday) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + nToday + " คิว</b> เริ่ม 09:00 น.<br>";
+        html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
+        el.innerHTML = html;
+        el.classList.remove("hidden");
+        stopQueueAlertPoll();   // ได้คิวแล้ว ไม่ต้องรอต่อ
+      } else {
+        // ยังไม่ถึงตาเรา — ระบบกันคิวไว้ให้เพื่อนที่ยังไม่ได้รับคิววันนี้ · บอกเหตุผลไว้ ไม่ให้เข้าใจว่าระบบพัง
+        el.className = "queue-alert pending";
+        el.innerHTML = "<div class='qa-title'>📥 มีคิวจองใหม่ " + nReserved + " คิวรออยู่</div>" +
+          "ระบบกำลังกันคิวไว้ให้เพื่อนที่ยังไม่ได้รับคิววันนี้ก่อน — ถ้าไม่มีใครมารับภายใน <b>" + cutoff + " น.</b> ระบบจะจ่ายให้ท่านอัตโนมัติ" +
+          "<div class='qa-sub'>หน้านี้อัปเดตให้เองทุก 1 นาที ไม่ต้องกดอะไร</div>";
+        el.classList.remove("hidden");
+        startQueueAlertPoll(officerId, prefix);
+      }
     }).catch(function(){});
+  }
+  // รีเฟรชเองระหว่างรอ — หยุดเมื่อได้คิว หรือครบ 20 รอบ (~20 นาที) กันยิง RPC ค้างทั้งวัน
+  function startQueueAlertPoll(officerId, prefix){
+    if (queueAlertTimer) return;
+    queueAlertTries = 0;
+    queueAlertTimer = setInterval(function(){
+      queueAlertTries++;
+      if (queueAlertTries > 20) { stopQueueAlertPoll(); return; }
+      loadQueueAlert(officerId, prefix);
+    }, 60000);
+  }
+  function stopQueueAlertPoll(){
+    if (queueAlertTimer) { clearInterval(queueAlertTimer); queueAlertTimer = null; }
   }
 
   // ================= กล่องเฝ้าดูคิวออนไลน์ — หัวหน้างาน OSS (oversight) / จุดคัดกรอง (dayof) =================
