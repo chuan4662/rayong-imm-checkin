@@ -105,6 +105,16 @@
   .queue-alert.watch .qa-sub{font-size:12.5px; color:#8A6A1E; margin-top:2px;}
   /* กล่อง "มีคิวรอ แต่ระบบกันไว้ให้เพื่อนก่อน" — โทนอ่อน แจ้งอย่างเดียว ไม่มีปุ่ม */
   .queue-alert.pending{background:#F8FAFC; border-color:#94A3B8; border-style:dashed; color:#475569;}
+  /* 🔔 มีคิวของเราจริง — สีส้ม-เหลืองเข้ม + กระพริบ ให้สะดุดตาแยกจากกล่องน้ำเงินอื่นในหน้า */
+  .queue-alert.mine{background:#FFF7E6; border:3px solid #F59E0B; color:#7C2D12; animation:qaPulse 1.4s ease-in-out infinite;}
+  .queue-alert.mine .qa-title{color:#B45309; font-size:17px;}
+  .queue-alert.mine .qa-btn{background:#D97706; font-size:17px; box-shadow:0 4px 12px rgba(217,119,6,.35);}
+  @keyframes qaPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.55); border-color:#F59E0B;}
+    50%    {box-shadow:0 0 0 10px rgba(245,158,11,0); border-color:#DC2626;}
+  }
+  /* เคารพผู้ใช้ที่ตั้งค่าลดการเคลื่อนไหวในเครื่อง — คงสีเด่นไว้ แต่ไม่กระพริบ */
+  @media (prefers-reduced-motion: reduce){ .queue-alert.mine{animation:none;} }
   .queue-alert.pending .qa-title{color:#334155;}
   .queue-alert.pending .qa-sub{font-size:12.5px; color:#64748B; margin-top:6px;}
   /* แบนเนอร์ทางเข้าหน้าจัดการคิวออนไลน์ (หน้าล็อกอิน) — navy+ทอง ชุดสีเดียวกับระบบคิว */
@@ -1305,6 +1315,7 @@
         if (nAction) html += "🔔 มีคิวรอคุณดำเนินการ <b>" + nAction + " คิว</b> — กดรับ / ถามข้อมูล / ยืนยันรับคิว<br>";
         if (nToday) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + nToday + " คิว</b> เริ่ม 09:00 น.<br>";
         html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
+        el.className = "queue-alert mine";   // สีส้มกระพริบ — แยกจากกล่องน้ำเงินอื่นในหน้าให้ชัด
         el.innerHTML = html;
         el.classList.remove("hidden");
         stopQueueAlertPoll();   // ได้คิวแล้ว ไม่ต้องรอต่อ
