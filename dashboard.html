@@ -451,7 +451,15 @@
 
       <div class="card">
         <h2>รายชื่อเจ้าหน้าที่ทั้งหมด</h2>
-        <p class="sub" style="margin:0 0 12px;">กด "รีเซ็ต PIN" ถ้าเจ้าหน้าที่คนไหนลืมรหัส — เขาจะไปตั้ง PIN ใหม่เองได้ตอนล็อกอินครั้งถัดไป</p>
+        <p class="sub" style="margin:0 0 12px;">เพิ่มคนใหม่ได้ที่ช่องด้านล่าง (ระบบจะต่อท้ายรายชื่อให้เอง เจ้าตัวไปตั้ง PIN เองตอนเช็กอินครั้งแรก) · กด "รีเซ็ต PIN" ถ้าใครลืมรหัส · <b>คนที่มีประวัติเช็กอินแล้วจะลบไม่ได้ ใช้ "ปิดใช้งาน" แทน</b> — ชื่อจะหายจากหน้าเช็กอินแต่ประวัติยังอยู่ครบ เปิดกลับได้ทุกเมื่อ</p>
+        <div class="filter-row" style="margin:0 0 14px; align-items:end;">
+          <div><label style="font-weight:400; font-size:13px;">ยศ / คำนำหน้า</label><input type="text" id="newOfficerRank" placeholder="เช่น ด.ต. / น.ส."></div>
+          <div><label style="font-weight:400; font-size:13px;">ชื่อ-สกุล</label><input type="text" id="newOfficerName" placeholder="เช่น จิตติกร สิงหพันธ์"></div>
+          <div><label style="font-weight:400; font-size:13px;">ชื่อเล่น</label><input type="text" id="newOfficerNick" placeholder="เช่น เจ"></div>
+          <div><button id="btnAddOfficer" class="btn-row-action" style="padding:9px 16px;">➕ เพิ่มเจ้าหน้าที่</button></div>
+        </div>
+        <div id="addOfficerError" class="error-box hidden"></div>
+        <div id="addOfficerSuccess" class="success-box hidden"></div>
         <div id="officersTableWrap"><div class="center">กำลังโหลด...</div></div>
       </div>
 
@@ -1207,6 +1215,49 @@
   });
 
   // ================= ตารางเจ้าหน้าที่ทั้งหมด + ปุ่มรีเซ็ต PIN =================
+  // ================= จัดการรายชื่อเจ้าหน้าที่ (migration 33) =================
+  var OFFICER_ERR = {
+    not_supervisor: "ไม่มีสิทธิ์ทำรายการนี้",
+    officer_not_found: "ไม่พบเจ้าหน้าที่คนนี้",
+    is_supervisor_account: "นี่เป็นบัญชีหัวหน้า ให้จัดการที่การ์ด \"จัดการบัญชีหัวหน้า\" แทน",
+    name_required: "กรุณากรอกชื่อ-สกุล",
+    duplicate_name: "มีชื่อนี้ในระบบอยู่แล้ว",
+    missing_field: "กรอกข้อมูลไม่ครบ",
+    bad_pin: "PIN ไม่ถูกต้อง",
+    pin_locked: "ใส่ PIN ผิดหลายครั้ง ระบบล็อกชั่วคราว"
+  };
+  function reloadOfficers(){
+    sb.rpc("do_list_officers_admin").then(function(res){
+      if (!res.error) { renderOfficersTable(res.data); renderSupervisorsMgmt(res.data); }
+    });
+  }
+  document.getElementById("btnAddOfficer").addEventListener("click", function(){
+    var errEl = document.getElementById("addOfficerError");
+    var okEl = document.getElementById("addOfficerSuccess");
+    errEl.classList.add("hidden"); okEl.classList.add("hidden");
+    var rank = document.getElementById("newOfficerRank").value.trim();
+    var name = document.getElementById("newOfficerName").value.trim();
+    var nick = document.getElementById("newOfficerNick").value.trim();
+    if (!name) { errEl.textContent = "กรุณากรอกชื่อ-สกุล"; errEl.classList.remove("hidden"); return; }
+    var btn = this;
+    btn.disabled = true; btn.textContent = "กำลังเพิ่ม...";
+    sb.rpc("do_admin_add_officer", { p_rank_title: rank, p_full_name: name, p_nickname: nick }).then(function(res){
+      btn.disabled = false; btn.textContent = "➕ เพิ่มเจ้าหน้าที่";
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+        errEl.textContent = "เพิ่มไม่สำเร็จ: " + (OFFICER_ERR[code] || code);
+        errEl.classList.remove("hidden");
+        return;
+      }
+      okEl.textContent = "เพิ่ม " + name + " เรียบร้อย (ลำดับที่ " + res.data.sort_order + ") — เจ้าตัวจะตั้ง PIN เองตอนเช็กอินครั้งแรก";
+      okEl.classList.remove("hidden");
+      document.getElementById("newOfficerRank").value = "";
+      document.getElementById("newOfficerName").value = "";
+      document.getElementById("newOfficerNick").value = "";
+      reloadOfficers();
+    });
+  });
+
   function renderOfficersTable(rows){
     var wrap = document.getElementById("officersTableWrap");
     if (!rows || rows.length === 0) {
@@ -1225,7 +1276,7 @@
         '<td>' + escapeHtml(o.full_name) + '</td>' +
         '<td>' + escapeHtml(o.nickname || "-") + '</td>' +
         '<td>' + escapeHtml(o.rank_title || "-") + '</td>' +
-        '<td>' + (o.active ? "ใช้งาน" : '<span class="muted">ปิดใช้งาน</span>') + '</td>' +
+        '<td>' + (o.active ? "ใช้งาน" : '<span class="muted">ปิดใช้งาน</span>') + (o.history_count === 0 ? ' <span class="muted" style="font-size:11.5px;">(ยังไม่มีประวัติ)</span>' : '') + '</td>' +
         '<td>' + (o.login_method === "auth" ? '<span class="muted">-</span>' : (o.needs_pin_setup ? '<span class="pin-missing">ยังไม่ตั้ง</span>' : '<span class="pin-ok">ตั้งแล้ว</span>')) + '</td>' +
         '<td>' + loginLabel + '</td>' +
         '<td>' + (o.is_supervisor ? "หัวหน้า" : "-") + '</td>' +
@@ -1234,11 +1285,63 @@
         '<td style="white-space:nowrap;">' +
           (canReset ? '<button class="btn-danger-small" data-reset="' + o.id + '">รีเซ็ต PIN</button> ' : '') +
           '<button class="btn-row-action" data-workdays="' + o.id + '">แก้วันทำงาน</button>' +
+          (o.is_supervisor ? '' :
+            ' <button class="btn-row-action" data-officer-active="' + o.id + '" data-to="' + (!o.active) + '">' + (o.active ? "ปิดใช้งาน" : "เปิดใช้งาน") + '</button>') +
+          (o.can_delete ? ' <button class="btn-danger-small" data-officer-remove="' + o.id + '">ลบชื่อ</button>' : '') +
         '</td>' +
         '</tr>';
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
+
+    // ปิด/เปิดใช้งานเจ้าหน้าที่ (migration 33) — ประวัติไม่หาย กลับมาเปิดได้ทุกเมื่อ
+    wrap.querySelectorAll("button[data-officer-active]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-officer-active");
+        var to = btn.getAttribute("data-to") === "true";
+        var o = (rows || []).filter(function(x){ return x.id === id; })[0];
+        var nm = o ? (o.full_name + (o.nickname ? " (" + o.nickname + ")" : "")) : "";
+        var msg = to
+          ? ("เปิดใช้งาน " + nm + " ใช่ไหม?\n\nชื่อจะกลับมาให้เลือกในหน้าเช็กอินอีกครั้ง")
+          : ("ปิดใช้งาน " + nm + " ใช่ไหม?\n\n• ชื่อจะหายจากหน้าเช็กอิน เจ้าตัวจะเช็กอินไม่ได้อีก\n• ประวัติเช็กอินเดิมยังอยู่ครบ ไม่ถูกลบ\n• เปิดกลับได้ทุกเมื่อ");
+        if (!confirm(msg)) return;
+        btn.disabled = true;
+        sb.rpc("do_admin_set_officer_active", { p_target_officer_id: id, p_active: to }).then(function(res){
+          btn.disabled = false;
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            alert("ทำรายการไม่สำเร็จ: " + (OFFICER_ERR[code] || code));
+            return;
+          }
+          reloadOfficers();
+        });
+      });
+    });
+
+    // ลบชื่อออกจากระบบจริง — ปุ่มนี้จะโผล่เฉพาะคนที่ can_delete (ไม่มีประวัติเลย)
+    wrap.querySelectorAll("button[data-officer-remove]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-officer-remove");
+        var o = (rows || []).filter(function(x){ return x.id === id; })[0];
+        var nm = o ? (o.full_name + (o.nickname ? " (" + o.nickname + ")" : "")) : "";
+        if (!confirm("ลบ " + nm + " ออกจากระบบถาวรใช่ไหม?\n\nคนนี้ยังไม่มีประวัติเช็กอินเลย จึงลบออกได้หมดจด\nลบแล้วกู้คืนไม่ได้ ต้องเพิ่มชื่อใหม่")) return;
+        btn.disabled = true;
+        sb.rpc("do_admin_remove_officer", { p_target_officer_id: id }).then(function(res){
+          btn.disabled = false;
+          if (res.error || !res.data || res.data.ok !== true) {
+            var code = res.data ? res.data.error : (res.error ? res.error.message : "unknown");
+            if (code === "has_history") {
+              alert("ลบไม่ได้ เพราะมีประวัติในระบบแล้ว " + (res.data.history_count || "") + " รายการ\n\nให้ใช้ปุ่ม \"ปิดใช้งาน\" แทน — ชื่อจะหายจากหน้าเช็กอินแต่ประวัติยังอยู่ครบ");
+              reloadOfficers();
+              return;
+            }
+            alert("ลบไม่สำเร็จ: " + (OFFICER_ERR[code] || code));
+            return;
+          }
+          reloadOfficers();
+        });
+      });
+    });
 
     wrap.querySelectorAll("select[data-group-assign]").forEach(function(sel){
       sel.addEventListener("change", function(){
