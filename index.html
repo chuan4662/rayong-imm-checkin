@@ -117,6 +117,12 @@
   @media (prefers-reduced-motion: reduce){ .queue-alert.mine{animation:none;} }
   .queue-alert.pending .qa-title{color:#334155;}
   .queue-alert.pending .qa-sub{font-size:12.5px; color:#64748B; margin-top:6px;}
+  /* 👥 คิวกลุ่ม (ธุรกิจ/ครอบครัว/90 วัน) — สีเขียว แยกจากคิวของตัวเอง · เฉพาะสมาชิกกลุ่ม */
+  .queue-alert.group{background:#ECFDF5; border-color:#059669; color:#064E3B;}
+  .queue-alert.group .qa-title{color:#065F46;}
+  .queue-alert.group .qa-btn{background:#047857;}
+  .queue-alert.group .qa-row{padding:4px 0; font-size:14px; border-top:1px solid #A7F3D0; overflow-wrap:anywhere;}
+  .queue-alert.group .qa-sub{font-size:12.5px; color:#047857; margin-top:6px;}
   /* แบนเนอร์ทางเข้าหน้าจัดการคิวออนไลน์ (หน้าล็อกอิน) — navy+ทอง ชุดสีเดียวกับระบบคิว */
   .queue-promo{display:flex; align-items:center; gap:12px; margin:0 0 10px; padding:14px 16px; border-radius:16px; text-decoration:none;
     background:linear-gradient(130deg,#041A3A 0%,#062B59 58%,#031832 100%); border:1.5px solid #C89D3C; color:#fff;
@@ -320,6 +326,7 @@
     </div>
     <div id="resGpsWarning" class="warning-box hidden">⚠️ คุณเช็กอินโดยไม่ได้เปิด/อนุญาต GPS — ระบบยังบันทึกเช็กอินให้ตามปกติ แต่หัวหน้าจะเห็นว่าไม่มีข้อมูลระยะห่าง</div>
     <div id="resultQueueBox" class="queue-alert hidden"></div>
+    <div id="resultGroupBox" class="queue-alert group hidden"></div>
     <div id="resultWatchBox" class="queue-alert watch hidden"></div>
     <button class="btn-primary" id="btnDone">เสร็จสิ้น</button>
 
@@ -384,6 +391,7 @@
     </div>
     <div id="alreadyGpsWarning" class="warning-box hidden">⚠️ เช็กอินครั้งนั้นไม่ได้เปิด/อนุญาต GPS — ไม่มีข้อมูลระยะห่างให้หัวหน้าดู</div>
     <div id="alreadyQueueBox" class="queue-alert hidden"></div>
+    <div id="alreadyGroupBox" class="queue-alert group hidden"></div>
     <div id="alreadyWatchBox" class="queue-alert watch hidden"></div>
     <button class="btn-primary" id="btnDoneAlready">ตกลง</button>
 
@@ -518,6 +526,7 @@
     checkoutAlready: document.getElementById("screen-checkout-already")
   };
   function showScreen(name){
+    if (queueAlertContext && queueAlertContext.prefix !== name) stopQueueAlertPoll();
     Object.keys(screens).forEach(function(k){ screens[k].classList.add("hidden"); });
     screens[name].classList.remove("hidden");
   }
@@ -1290,58 +1299,262 @@
     });
 
     loadMotto("alreadyMotto");
-    loadQueueAlert(officerId, "already");
+    loadQueueAlert(officerId, "already", pin);
     loadQueueWatch(officerId, pin, "already");
     loadMyStats(officerId, pin, "already");
     loadMyPraise(officerId, pin, "already");
   }
 
   // ================= คิวจองออนไลน์ (booking.rayongimm.link) — แจ้งหลังเช็กอินว่ามีคิวรอดำเนินการ =================
-  // prefix = "result" หรือ "already" — RPC คืนเฉพาะจำนวนคิว (ไม่มีข้อมูลส่วนบุคคล) จึงไม่ต้องใช้ PIN
-  var queueAlertTimer = null, queueAlertTries = 0;
-  function loadQueueAlert(officerId, prefix){
+  // prefix = "result" หรือ "already" — ครั้งแรกใช้ do_officer_queue_badge (คืนเฉพาะจำนวนคิว ไม่ใช้ PIN · อาจกระตุ้นการจ่ายคิว จึงเรียกแค่ตอนเปิดหน้า)
+  // ถ้ามีคิว/มีคิวที่กันไว้ จึงตรวจซ้ำด้วย do_officer_get_my_queues (ใช้ PIN · คืนรายละเอียดคิวของตัวเอง แต่หน้านี้นับแค่สถานะ)
+  // ทุก 1 นาที ไม่เกิน 30 รอบ และหยุดเมื่อถึง 10:45 น. (สิ้นรอบจ่ายคิว) · ไม่มีคิว = ไม่แสดงกล่อง ไม่ตรวจซ้ำ (เหมือนเดิม)
+  var QUEUE_POLL_MAX = 30, QUEUE_POLL_UNTIL = "10:45";
+  var queueAlertTimer = null, queueAlertContext = null;
+  function queueIsCurrent(ctx){ return queueAlertContext === ctx && screens[ctx.prefix] && !screens[ctx.prefix].classList.contains("hidden"); }
+  function queueContext(officerId, prefix){
+    if (queueAlertContext && queueAlertContext.officerId === officerId && queueAlertContext.prefix === prefix) return queueAlertContext;
+    stopQueueAlertPoll();
+    return queueAlertContext = { officerId: officerId, prefix: prefix, pin: null, counts: null, cutoff: "08:45", updated: "",
+      polling: false, ended: false, failed: false, authExpired: false, rounds: 0, lastAt: 0, busy: false,
+      watchRole: undefined, watchBusy: false, watchVersion: 0, group: null, groupTurn: false, groupFirst: false };
+  }
+  function queuePollOver(ctx){
+    return ctx.rounds >= QUEUE_POLL_MAX || new Date().toLocaleTimeString("sv-SE", { timeZone: "Asia/Bangkok" }).slice(0, 5) >= QUEUE_POLL_UNTIL;
+  }
+  function queuePollEnd(ctx){
+    if (queueAlertTimer) { clearInterval(queueAlertTimer); queueAlertTimer = null; }
+    ctx.ended = true; ctx.pin = null;   // ไม่ตรวจซ้ำแล้ว = ไม่ถือ PIN ไว้ต่อ
+    if (ctx.group && ctx.group.polling) { ctx.group.polling = false; ctx.group.ended = true; }
+  }
+  function queueAuthExpired(ctx){
+    ctx.authExpired = true;
+    queuePollEnd(ctx);
+    var el = document.getElementById(ctx.prefix + "QueueBox");
+    if (el && ctx.counts) queueAlertRender(el, ctx);
+    queueGroupRender(ctx);
+  }
+  function queueFooter(ctx){
+    if (!ctx.polling) return "";   // ไม่ได้ตรวจซ้ำ (เลย 10:45 น. แล้ว) — กล่องเหมือนเดิม
+    if (ctx.authExpired) return "<div class='qa-sub'>หยุดอัปเดตคิวแล้ว เพราะรหัส PIN ใช้ไม่ได้ — กดปุ่ม “" + (ctx.prefix === "already" ? "ตกลง" : "เสร็จสิ้น") + "” ด้านล่าง แล้วเลือกชื่อและใส่ PIN ใหม่</div>";
+    if (ctx.ended) return "<div class='qa-sub'>อัปเดตล่าสุด " + ctx.updated + " น. · หยุดตรวจอัตโนมัติแล้ว — ดูคิวล่าสุดได้ที่ <a href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>หน้าจัดการคิวออนไลน์</a></div>";
+    return "<div class='qa-sub'>" + (ctx.failed ? "ยังอัปเดตคิวล่าสุดไม่ได้ ข้อมูลในกล่องนี้เป็นของเวลา " + ctx.updated + " น. ระบบจะลองใหม่ใน 1 นาที"
+      : "อัปเดตล่าสุด " + ctx.updated + " น. · หน้านี้ตรวจคิวให้เองทุก " + (ctx.group && ctx.group.polling ? 2 : 1) + " นาที ถึง " + QUEUE_POLL_UNTIL + " น.") +
+      " <button type='button' data-queue-refresh>อัปเดตคิวตอนนี้</button></div>";
+  }
+  function queueAlertRender(el, ctx){
+    var c = ctx.counts;
+    el.className = "queue-alert hidden";
+    if (!c || (!c.action && !c.today && !c.reserved)) { el.innerHTML = ""; return; }   // ไม่มีคิว = ไม่แสดงกล่อง
+
+    var html;
+    if (c.action || c.today) {
+      // มีคิวของตัวเองแล้ว → กล่องน้ำเงินเดิม + ปุ่มเข้าหน้าจัดการคิว
+      html = "<div class='qa-title'>📥 คิวจองออนไลน์ของคุณ</div>";
+      if (c.action) html += "🔔 มีคิวรอคุณดำเนินการ <b>" + c.action + " คิว</b> — กดรับ / ถามข้อมูล / ยืนยันรับคิว<br>";
+      if (c.today) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + c.today + " คิว</b> เริ่ม 09:00 น.<br>";
+      html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
+      el.className = "queue-alert mine";   // สีส้มกระพริบ — แยกจากกล่องน้ำเงินอื่นในหน้าให้ชัด
+    } else {
+      // ยังไม่ถึงตาเรา — ระบบกันคิวไว้ให้เพื่อนที่ยังไม่ได้รับคิววันนี้ · บอกเหตุผลไว้ ไม่ให้เข้าใจว่าระบบพัง
+      html = "<div class='qa-title'>📥 มีคิวจองใหม่ " + c.reserved + " คิวรออยู่</div>" +
+        "ระบบกำลังกันคิวไว้ให้เพื่อนที่ยังไม่ได้รับคิววันนี้ก่อน — ถ้าไม่มีใครมารับ หลัง <b>" + escapeHtml(ctx.cutoff) + " น.</b> ระบบจะทยอยจ่ายให้ท่านอัตโนมัติ";
+      el.className = "queue-alert pending";
+    }
+    el.innerHTML = html + queueFooter(ctx);
+  }
+  function queueBadgeError(el){
+    el.className = "queue-alert pending";
+    el.innerHTML = "<div class='qa-title'>ยังตรวจสอบคิวออนไลน์ไม่ได้</div>ไม่ได้หมายความว่าไม่มีคิว — กดปุ่มด้านล่างเพื่อลองอีกครั้ง" +
+      "<div class='qa-sub'><button type='button' data-queue-refresh>ลองตรวจคิวอีกครั้ง</button></div>";
+  }
+  function loadQueueAlert(officerId, prefix, pin){
     var el = document.getElementById(prefix + "QueueBox");
     if (!el || !officerId) return;
+    var ctx = queueContext(officerId, prefix);
+    if (pin && !ctx.authExpired) ctx.pin = pin;
+    if (!queueIsCurrent(ctx) || ctx.busy) return;
+    ctx.busy = true;
     sb.rpc("do_officer_queue_badge", { p_officer_id: officerId }).then(function(res){
-      if (res.error || !res.data || res.data.ok !== true) return; // ดึงไม่ได้ = ไม่โชว์ ไม่รบกวนการเช็กอิน
-      var nAction = res.data.action || 0, nToday = res.data.today || 0;
-      var nReserved = res.data.reserved || 0, cutoff = res.data.assign_after || "08:45";
-      el.className = "queue-alert hidden";
-      if (!nAction && !nToday && !nReserved) { stopQueueAlertPoll(); return; }
-
-      if (nAction || nToday) {
-        // มีคิวของตัวเองแล้ว → กล่องน้ำเงินเดิม + ปุ่มเข้าหน้าจัดการคิว
-        var html = "<div class='qa-title'>📥 คิวจองออนไลน์ของคุณ</div>";
-        if (nAction) html += "🔔 มีคิวรอคุณดำเนินการ <b>" + nAction + " คิว</b> — กดรับ / ถามข้อมูล / ยืนยันรับคิว<br>";
-        if (nToday) html += "📅 วันนี้มีนัดคิวออนไลน์ (ยืนยันแล้ว) <b>" + nToday + " คิว</b> เริ่ม 09:00 น.<br>";
-        html += "<a class='qa-btn' href='https://booking.rayongimm.link/queue.html' target='_blank' rel='noopener'>เปิดหน้าจัดการคิวออนไลน์ →</a>";
-        el.className = "queue-alert mine";   // สีส้มกระพริบ — แยกจากกล่องน้ำเงินอื่นในหน้าให้ชัด
-        el.innerHTML = html;
-        el.classList.remove("hidden");
-        stopQueueAlertPoll();   // ได้คิวแล้ว ไม่ต้องรอต่อ
-      } else {
-        // ยังไม่ถึงตาเรา — ระบบกันคิวไว้ให้เพื่อนที่ยังไม่ได้รับคิววันนี้ · บอกเหตุผลไว้ ไม่ให้เข้าใจว่าระบบพัง
-        el.className = "queue-alert pending";
-        el.innerHTML = "<div class='qa-title'>📥 มีคิวจองใหม่ " + nReserved + " คิวรออยู่</div>" +
-          "ระบบกำลังกันคิวไว้ให้เพื่อนที่ยังไม่ได้รับคิววันนี้ก่อน — ถ้าไม่มีใครมารับภายใน <b>" + cutoff + " น.</b> ระบบจะจ่ายให้ท่านอัตโนมัติ" +
-          "<div class='qa-sub'>หน้านี้อัปเดตให้เองทุก 1 นาที ไม่ต้องกดอะไร</div>";
-        el.classList.remove("hidden");
-        startQueueAlertPoll(officerId, prefix);
+      if (!queueIsCurrent(ctx)) return;
+      if (res.error || !res.data || res.data.ok !== true) { queueBadgeError(el); return; }
+      ctx.counts = { action: Math.max(0, Number(res.data.action) || 0), today: Math.max(0, Number(res.data.today) || 0), reserved: Math.max(0, Number(res.data.reserved) || 0) };
+      ctx.cutoff = res.data.assign_after || "08:45";
+      ctx.updated = new Date().toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" });
+      ctx.lastAt = Date.now();
+      ctx.group = queueGroupFromBadge(res.data);   // badge แบบเก่า / ไม่ใช่สมาชิกกลุ่ม = null → ไม่มีกล่องกลุ่ม
+      var c = ctx.counts, G = ctx.group, groupOpen = !!(G && queueGroupOpen(G));
+      // ตรวจซ้ำเฉพาะคนที่มีคิว/มีคิวที่กันไว้ (หรือมีคิวกลุ่มรอกดรับ) และยังไม่ถึงเพดาน
+      if (ctx.pin && !queuePollOver(ctx) && !queueAlertTimer) {
+        if (c.action || c.today || c.reserved) ctx.polling = true;
+        if (groupOpen && G.waiting > 0) G.polling = true;
+        if (ctx.polling || (G && G.polling)) queueAlertTimer = setInterval(function(){ refreshQueueAlerts("tick"); }, 60000);
       }
-    }).catch(function(){});
+      queueAlertRender(el, ctx);
+      queueGroupRender(ctx);
+      // หลังวันเปิด: ดึงรายการคิวกลุ่ม (พร้อมชื่อคนที่กดรับ) ทันที 1 ครั้ง นับรวมในเพดาน 30 รอบ — รอ badge จบก่อน
+      ctx.groupFirst = groupOpen && !!ctx.pin && !queuePollOver(ctx);
+    }).catch(function(){ if (queueIsCurrent(ctx)) queueBadgeError(el); }).then(function(){
+      ctx.busy = false;
+      if (ctx.groupFirst) { ctx.groupFirst = false; loadGroupQueues(ctx); }
+    });
   }
-  // รีเฟรชเองระหว่างรอ — หยุดเมื่อได้คิว หรือครบ 20 รอบ (~20 นาที) กันยิง RPC ค้างทั้งวัน
-  function startQueueAlertPoll(officerId, prefix){
-    if (queueAlertTimer) return;
-    queueAlertTries = 0;
-    queueAlertTimer = setInterval(function(){
-      queueAlertTries++;
-      if (queueAlertTries > 20) { stopQueueAlertPoll(); return; }
-      loadQueueAlert(officerId, prefix);
-    }, 60000);
+  // mode: "tick" = ตัวจับเวลา · "wake" = กลับมาที่หน้านี้ (ไม่ถี่กว่านาทีละครั้ง) · "manual" = กดปุ่มเอง — ทุกครั้งนับรวมในเพดาน 30 รอบ
+  // want: "group" = ปุ่มในกล่องคิวกลุ่ม · ถ้าต้องตรวจทั้งคิวของตัวเองและคิวกลุ่ม จะผลัดกันรอบละ 1 คำขอ (จำนวนคำขอไม่เกินเพดานเดิม)
+  function refreshQueueAlerts(mode, want){
+    var ctx = queueAlertContext;
+    if (!ctx || document.hidden || !queueIsCurrent(ctx) || ctx.busy || ctx.authExpired) return;
+    if (!ctx.counts) {   // badge ครั้งแรกดึงไม่ได้ — ลองใหม่เฉพาะเมื่อกดเอง
+      if (mode === "manual" && ctx.rounds < QUEUE_POLL_MAX) { ctx.rounds++; loadQueueAlert(ctx.officerId, ctx.prefix); }
+      return;
+    }
+    var G = ctx.group, grp = !!(G && G.polling);
+    if (want === "group") { if (mode === "manual" && G && !ctx.ended && ctx.pin && queueGroupOpen(G)) loadGroupQueues(ctx); return; }
+    if ((!ctx.polling && !grp) || ctx.ended || !ctx.pin) return;
+    if (mode === "wake" && Date.now() - ctx.lastAt < 60000) return;
+    var el = document.getElementById(ctx.prefix + "QueueBox");
+    if (queuePollOver(ctx)) { queuePollEnd(ctx); queueAlertRender(el, ctx); queueGroupRender(ctx); return; }
+    if (grp && (!ctx.polling || (mode !== "manual" && ctx.groupTurn))) { ctx.groupTurn = false; loadGroupQueues(ctx); return; }
+    ctx.groupTurn = grp;
+    ctx.busy = true; ctx.rounds++; ctx.lastAt = Date.now();
+    sb.rpc("do_officer_get_my_queues", { p_officer_id: ctx.officerId, p_pin: ctx.pin }).then(function(res){
+      if (!queueIsCurrent(ctx)) return;
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data && res.data.error;
+        if (code === "bad_pin" || code === "pin_locked" || code === "officer_not_found") ctx.authExpired = true;
+        else ctx.failed = true;
+        return;
+      }
+      var queues = res.data.queues || [], today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
+      var nAction = queues.filter(function(q){ return q.status === "assigned" || q.status === "claimed"; }).length;
+      var nToday = queues.filter(function(q){ return q.status === "confirmed" && (q.is_today === true || q.date === today); }).length;
+      ctx.counts = { action: nAction, today: nToday, reserved: (nAction || nToday) ? 0 : ctx.counts.reserved };
+      ctx.failed = false;
+      ctx.updated = new Date().toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" });
+    }).catch(function(){ ctx.failed = true; }).then(function(){
+      ctx.busy = false;
+      if (!queueIsCurrent(ctx)) return;
+      var c = ctx.counts;
+      if (ctx.authExpired || queuePollOver(ctx)) queuePollEnd(ctx);   // PIN ใช้ไม่ได้ / ครบเพดาน
+      else if (!c.action && !c.today && !c.reserved) {   // ไม่มีอะไรต้องรอ — ถ้าคิวกลุ่มยังรอกดรับอยู่ ตรวจเฉพาะคิวกลุ่มต่อ
+        ctx.polling = false;
+        if (!(ctx.group && ctx.group.polling)) queuePollEnd(ctx);
+      }
+      queueAlertRender(el, ctx);
+      queueGroupRender(ctx);
+      if (!ctx.ended && ctx.watchRole !== null) loadQueueWatch(ctx.officerId, ctx.pin, ctx.prefix);   // role:null = ไม่ใช่ผู้เฝ้าคิว ไม่เรียกซ้ำ
+    });
   }
   function stopQueueAlertPoll(){
     if (queueAlertTimer) { clearInterval(queueAlertTimer); queueAlertTimer = null; }
+    queueAlertContext = null;
+    ["resultQueueBox", "alreadyQueueBox", "resultGroupBox", "alreadyGroupBox", "resultWatchBox", "alreadyWatchBox"].forEach(function(id){
+      var box = document.getElementById(id);
+      if (box) { box.innerHTML = ""; box.classList.add("hidden"); }
+    });
+  }
+  document.addEventListener("visibilitychange", function(){ refreshQueueAlerts("wake"); });
+  window.addEventListener("focus", function(){ refreshQueueAlerts("wake"); });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest && e.target.closest("[data-queue-refresh]");
+    if (b) refreshQueueAlerts("manual", b.getAttribute("data-queue-refresh") === "group" ? "group" : "");
+  });
+
+  // ================= 👥 คิวกลุ่ม (v3: งานธุรกิจ / ครอบครัว / 90 วัน) — เฉพาะสมาชิกกลุ่ม =================
+  // รู้ว่าเป็นสมาชิกจาก badge field group_codes (ไม่ใช้ PIN) · badge แบบเก่า/ไม่ใช่สมาชิก = ไม่มีกล่อง (เหมือน v2)
+  // ก่อนวันเปิด = ประกาศอย่างเดียว ไม่เรียกอะไรเพิ่ม · หลังเปิด = ดึง do_group_queues (PIN) 1 ครั้ง แล้วตรวจซ้ำเฉพาะเมื่อยังมีคิวรอกดรับ
+  // ทุกคำขอนับรวมในเพดานเดียวกับคิวของตัวเอง (30 รอบ / ถึง 10:45 น.)
+  var GROUP_OPEN_FALLBACK = Date.parse("2026-10-15T00:00:00+07:00");   // ใช้เมื่อ DB ไม่ส่ง open_from มา
+  var GROUP_NAMES = { business: "ธุรกิจ", family: "ครอบครัว", report90: "รายงานตัว 90 วัน" };
+  var GROUP_QUEUE_URL = "https://booking.rayongimm.link/queue";
+  var GROUP_ROWS_MAX = 8;
+  function queueGroupFromBadge(d){
+    if (!d || !Array.isArray(d.group_codes) || !d.group_codes.length) return null;
+    var from = d.group_open_from != null ? d.group_open_from : d.open_from;
+    return { waiting: Math.max(0, Number(d.group_waiting) || 0), lists: null, polling: false, ended: false, failed: false, updated: "",
+      groups: d.group_codes.map(function(x){
+        var obj = x && typeof x === "object", code = String((obj ? x.code : x) || "");
+        var f = obj && x.open_from != null ? x.open_from : (from && typeof from === "object" ? from[code] : from);
+        var at = f ? Date.parse(f) : NaN;
+        return { code: code, name: (obj && x.name_th) || GROUP_NAMES[code] || code, openAt: isNaN(at) ? GROUP_OPEN_FALLBACK : at };
+      }) };
+  }
+  function queueGroupOpen(G){ var now = Date.now(); return G.groups.some(function(g){ return now >= g.openAt; }); }
+  function queueGroupLabel(n){ n = String(n || ""); return n.indexOf("งาน") === 0 ? n : "งาน" + n; }
+  function queueGroupDate(v){
+    var t = typeof v === "number" ? v : Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? v + "T00:00:00+07:00" : v);
+    return isNaN(t) ? String(v == null ? "-" : v) : new Date(t).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit" });
+  }
+  function queueGroupFree(q){ return q.status === "submitted" && !q.claimed_by_nick && !q.is_mine; }
+  function queueGroupWaiting(G){
+    if (!G.lists) return G.waiting;
+    return G.lists.reduce(function(n, gr){ return n + (gr.items || []).filter(queueGroupFree).length; }, 0);
+  }
+  function queueGroupFooter(ctx){
+    var G = ctx.group, btn = !ctx.ended && ctx.pin && ctx.rounds < QUEUE_POLL_MAX ? " <button type='button' data-queue-refresh='group'>อัปเดตตอนนี้</button>" : "";
+    if (ctx.authExpired) return "<div class='qa-sub'>หยุดอัปเดตคิวกลุ่มแล้ว เพราะรหัส PIN ใช้ไม่ได้ — กดปุ่ม “" + (ctx.prefix === "already" ? "ตกลง" : "เสร็จสิ้น") + "” ด้านล่าง แล้วเลือกชื่อและใส่ PIN ใหม่</div>";
+    if (G.failed) return "<div class='qa-sub'>ยังโหลดรายการคิวกลุ่มล่าสุดไม่ได้" + (G.updated ? " ข้อมูลในกล่องนี้เป็นของเวลา " + G.updated + " น." : "") + (G.polling ? " ระบบจะลองใหม่อัตโนมัติ" : "") + btn + "</div>";
+    if (!G.updated) return "<div class='qa-sub'>ดูรายการและกดรับคิวได้ที่หน้าจัดการคิว</div>";
+    if (G.ended) return "<div class='qa-sub'>อัปเดตล่าสุด " + G.updated + " น. · หยุดตรวจอัตโนมัติแล้ว — ดูรายการล่าสุดได้ที่หน้าจัดการคิว</div>";
+    return "<div class='qa-sub'>อัปเดตล่าสุด " + G.updated + " น." + (G.polling ? " · หน้านี้ตรวจให้เองทุก " + (ctx.polling ? 2 : 1) + " นาที ถึง " + QUEUE_POLL_UNTIL + " น." : "") + btn + "</div>";
+  }
+  function queueGroupRender(ctx){
+    var el = document.getElementById(ctx.prefix + "GroupBox"), G = ctx.group;
+    if (!el) return;
+    if (!G) { el.innerHTML = ""; el.className = "queue-alert group hidden"; return; }
+    var now = Date.now(), h = "";
+    var soon = G.groups.filter(function(g){ return now < g.openAt; }), opened = G.groups.filter(function(g){ return now >= g.openAt; });
+    soon.forEach(function(g){
+      h += "<div class='qa-title'>📣 " + escapeHtml(queueGroupLabel(g.name)) + " เปิดให้ประชาชนจองคิวออนไลน์ " + escapeHtml(queueGroupDate(g.openAt)) + "</div>";
+    });
+    if (soon.length && !opened.length) h += "เมื่อเปิดแล้ว คิวจะเข้ากองกลางของกลุ่ม — เพื่อนในกลุ่มคนไหนก็กดรับได้ที่หน้าจัดการคิว";
+    if (opened.length) {
+      var waiting = queueGroupWaiting(G), items = [];
+      (G.lists || []).forEach(function(gr){ (gr.items || []).forEach(function(q){ items.push(q); }); });
+      items.sort(function(a, b){ return (queueGroupFree(b) ? 1 : 0) - (queueGroupFree(a) ? 1 : 0) || String(a.appt_date).localeCompare(String(b.appt_date)); });
+      h += (soon.length ? "<div style='margin-top:8px'></div>" : "") +
+        "<div class='qa-title'>👥 คิวกลุ่ม · " + escapeHtml(opened.map(function(g){ return queueGroupLabel(g.name); }).join(" · ")) + "</div>";
+      h += waiting ? "🔔 รอกดรับ <b>" + waiting + " คิว</b> — เพื่อนในกลุ่มคนไหนก็กดรับได้ ใครกดก่อนได้คิวนั้น" : "ตอนนี้ไม่มีคิวรอกดรับ ✅";
+      items.slice(0, GROUP_ROWS_MAX).forEach(function(q){
+        h += "<div class='qa-row'>• <b>" + escapeHtml(q.ref || "-") + "</b> · " + escapeHtml(q.visa || "-") + " · นัด " + escapeHtml(queueGroupDate(q.appt_date)) + "<br>" +
+          (queueGroupFree(q) ? "<b style='color:#B45309'>⏳ รอคนกดรับ</b>"
+            : q.is_mine ? "✋ <b>คุณ</b>กดรับแล้ว" : "✋ <b>" + escapeHtml(q.claimed_by_nick || "เพื่อนในกลุ่ม") + "</b> กดรับแล้ว") + "</div>";
+      });
+      if (items.length > GROUP_ROWS_MAX) h += "<div class='qa-sub'>และอีก " + (items.length - GROUP_ROWS_MAX) + " รายการ — ดูทั้งหมดที่หน้าจัดการคิว</div>";
+      h += "<a class='qa-btn' href='" + GROUP_QUEUE_URL + "' target='_blank' rel='noopener'>ไปหน้าจัดการคิว →</a>" + queueGroupFooter(ctx);
+    }
+    el.innerHTML = h;
+    el.className = "queue-alert group";
+  }
+  function loadGroupQueues(ctx){
+    var G = ctx.group;
+    if (!G || !ctx.pin || ctx.busy || ctx.authExpired || ctx.ended || !queueIsCurrent(ctx)) return;
+    if (queuePollOver(ctx)) { queuePollEnd(ctx); queueAlertRender(document.getElementById(ctx.prefix + "QueueBox"), ctx); queueGroupRender(ctx); return; }
+    ctx.busy = true; ctx.rounds++; ctx.lastAt = Date.now();
+    sb.rpc("do_group_queues", { p_officer_id: ctx.officerId, p_pin: ctx.pin }).then(function(res){
+      if (!queueIsCurrent(ctx)) return;
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data && res.data.error;
+        if (code === "bad_pin" || code === "pin_locked" || code === "officer_not_found") ctx.authExpired = true;
+        else G.failed = true;
+        return;
+      }
+      G.lists = Array.isArray(res.data.groups) ? res.data.groups : [];
+      G.failed = false;
+      G.updated = new Date().toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok" });
+    }).catch(function(){ G.failed = true; }).then(function(){
+      ctx.busy = false;
+      if (!queueIsCurrent(ctx)) return;
+      if (ctx.authExpired) { queueAuthExpired(ctx); return; }
+      if (queuePollOver(ctx)) queuePollEnd(ctx);   // ครบเพดาน → หยุดทั้งหมด (G.ended)
+      else {
+        G.polling = queueGroupWaiting(G) > 0;    // ตรวจซ้ำเฉพาะเมื่อยังมีคิวรอกดรับ
+        if (G.polling && !queueAlertTimer) queueAlertTimer = setInterval(function(){ refreshQueueAlerts("tick"); }, 60000);
+        if (!G.polling && !ctx.polling && queueAlertTimer) queuePollEnd(ctx);
+      }
+      queueAlertRender(document.getElementById(ctx.prefix + "QueueBox"), ctx);
+      queueGroupRender(ctx);
+    });
   }
 
   // ================= กล่องเฝ้าดูคิวออนไลน์ — หัวหน้างาน OSS (oversight) / จุดคัดกรอง (dayof) =================
@@ -1349,9 +1562,23 @@
   function loadQueueWatch(officerId, pin, prefix){
     var el = document.getElementById(prefix + "WatchBox");
     if (!el || !officerId || !pin) return;
-    el.className = "queue-alert watch hidden";
+    var ctx = queueContext(officerId, prefix);
+    if (!queueIsCurrent(ctx) || ctx.watchBusy || ctx.authExpired || ctx.watchRole === null) return;
+    ctx.watchBusy = true;
+    var version = ++ctx.watchVersion;
     sb.rpc("do_officer_queue_watch", { p_officer_id: officerId, p_pin: pin }).then(function(res){
-      if (res.error || !res.data || res.data.ok !== true || !res.data.role) return; // ไม่มีบทบาท/พลาด = เงียบ ไม่กระทบเช็กอิน
+      if (!queueIsCurrent(ctx) || ctx.watchVersion !== version || ctx.authExpired) return;
+      if (res.error || !res.data || res.data.ok !== true) {
+        var code = res.data && res.data.error;
+        if (code === "bad_pin" || code === "pin_locked" || code === "officer_not_found") queueAuthExpired(ctx);
+        if (ctx.watchRole) {   // ขึ้นข้อความเฉพาะคนที่เคยเห็นกล่องนี้แล้ว · คนอื่นเงียบเหมือนเดิม
+          el.className = "queue-alert watch";
+          el.textContent = ctx.authExpired ? "หยุดอัปเดตภาพรวมคิวแล้ว เพราะรหัส PIN ใช้ไม่ได้" : "ยังอัปเดตภาพรวมคิวไม่ได้" + (queueAlertTimer ? " ระบบจะลองใหม่ใน 1 นาที" : "");
+        }
+        return;
+      }
+      if (!res.data.role) { ctx.watchRole = null; el.innerHTML = ""; el.className = "queue-alert watch hidden"; return; }   // ไม่ใช่ผู้เฝ้าคิว → ไม่เรียกซ้ำอีก
+      ctx.watchRole = res.data.role;
       var d = res.data, h = "";
       function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
       var todayRows = (d.today || []).map(function(q){
@@ -1375,14 +1602,20 @@
       }
       el.innerHTML = h;
       el.classList.remove("hidden");
-      loadStaleAlert(officerId, pin, el);   // ต่อท้ายด้วยคิวค้างนาน (ถ้ามี)
-    }).catch(function(){});
+      loadStaleAlert(officerId, pin, el, ctx, version);   // ต่อท้ายด้วยคิวค้างนาน (ถ้ามี)
+    }).catch(function(){
+      if (!queueIsCurrent(ctx) || ctx.authExpired || !ctx.watchRole) return;
+      el.className = "queue-alert watch";
+      el.textContent = "ยังอัปเดตภาพรวมคิวไม่ได้" + (queueAlertTimer ? " ระบบจะลองใหม่ใน 1 นาที" : "");
+    }).then(function(){ ctx.watchBusy = false; });
   }
 
   // คิวค้างนานเกินเกณฑ์ — 4 วันทำการ = เตือน · เกิน 5 วันทำการ = ระบบโยกให้คนว่างที่สุดแล้ว
-  function loadStaleAlert(officerId, pin, el){
+  function loadStaleAlert(officerId, pin, el, ctx, version){
     if (!el) return;
     sb.rpc("do_queue_stale", { p_officer_id: officerId, p_pin: pin }).then(function(res){
+      if (!queueIsCurrent(ctx) || ctx.watchVersion !== version || ctx.authExpired) return;
+      if (res.data && (res.data.error === "bad_pin" || res.data.error === "pin_locked")) { queueAuthExpired(ctx); return; }
       if (res.error || !res.data || res.data.ok !== true) return;
       var items = res.data.items || [];
       if (!items.length) return;
@@ -1670,7 +1903,7 @@
     showMedalBadge("result", data.daily_rank);
     showStaggerBadge("result", data);
     loadMotto("resultMotto");
-    loadQueueAlert(data.officerId, "result");
+    loadQueueAlert(data.officerId, "result", data.pin);
     loadQueueWatch(data.officerId, data.pin, "result");
     loadMyStats(data.officerId, data.pin, "result");
     loadMyPraise(data.officerId, data.pin, "result");

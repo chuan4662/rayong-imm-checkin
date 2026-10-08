@@ -1850,9 +1850,14 @@
   var qdOptions = [];  // เจ้าหน้าที่ที่ยังไม่เปิดรับคิว — หัวหน้าเพิ่มเองได้จากหน้านี้
   function qdEsc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
   var QD_ST = { submitted: "รอจ่ายคิว", assigned: "รอกดรับ", claimed: "กำลังตรวจ", confirmed: "ยืนยันแล้ว", completed: "ให้บริการแล้ว" };
+  var QD_ERR = { sup_action_not_allowed: "คิวของกลุ่มนี้หัวหน้าดูได้อย่างเดียว — การโยก/ยกเลิกต้องทำโดยเจ้าหน้าที่ที่กดรับคิว" };
+  var QD_POOL_NAME = { business: "ธุรกิจ", family: "ครอบครัว", report90: "รายงานตัว 90 วัน" };
+  // คิวกองกลางของกลุ่ม (v3) ที่ยังไม่มีใครกดรับ — ไม่ได้รอระบบจ่ายคิวแบบ OSS
+  function qdStatusText(q){ return q.pool_group && q.status === "submitted" ? "รอสมาชิกกลุ่มกดรับ" : (QD_ST[q.status] || q.status); }
 
   function qdRowButtons(q){
     var h = '';
+    if (q.can_reassign === false) return ' <span style="color:#94a3b8;font-size:11px">· หัวหน้าดูได้อย่างเดียว</span>';   // ธุรกิจ/ครอบครัว: server ปฏิเสธโยก/ยกเลิกโดยหัวหน้า
     if (qdState.reassignId !== q.id) {
       h += ' <button data-qact="reassign" data-id="' + qdEsc(q.id) + '" style="border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:3px 9px;font-size:11.5px;cursor:pointer">โยก</button>' +
            ' <button data-qact="cancel" data-id="' + qdEsc(q.id) + '" data-ref="' + qdEsc(q.ref) + '" style="border:1px solid #fca5a5;background:#fff;color:#b91c1c;border-radius:7px;padding:3px 9px;font-size:11.5px;cursor:pointer">ยกเลิก</button>';
@@ -1910,7 +1915,7 @@
     else pd.forEach(function(q){
       h += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px;margin-bottom:6px;font-size:12.5px">' +
         '<b style="font-family:monospace">' + qdEsc(q.ref) + '</b> · ' + qdEsc(q.name) + ' · ' + qdEsc(q.visa) +
-        ' · นัด ' + qdEsc(q.date) + ' · <span style="color:#b45309">' + qdEsc(QD_ST[q.status] || q.status) + '</span>' +
+        ' · นัด ' + qdEsc(q.date) + ' · <span style="color:#b45309">' + qdEsc(qdStatusText(q)) + '</span>' +
         ' · เจ้าของคิว: <b>' + qdEsc(q.officer) + '</b> <span style="color:#94a3b8;font-size:10.5px">จองเมื่อ ' + qdEsc(q.created) + '</span>' +
         qdRowButtons(q) + '</div>';
     });
@@ -1924,10 +1929,13 @@
       h += '<div style="border:1px solid ' + (warn ? "#fca5a5" : "#e2e8f0") + ';background:' + (warn ? "#fef2f2" : "#fff") + ';border-radius:10px;padding:8px 11px;margin-bottom:6px;font-size:12.5px">' +
         qdEsc(q.date) + (q.is_today ? ' <b style="color:#166534">(วันนี้)</b>' : '') +
         ' · <b style="font-family:monospace">' + qdEsc(q.ref) + '</b> · ' + qdEsc(q.name) + ' · ' + qdEsc(q.visa) +
-        ' · ' + qdEsc(QD_ST[q.status] || q.status) + ' · เจ้าของคิว: <b>' + qdEsc(q.officer) + '</b>' +
+        ' · ' + qdEsc(qdStatusText(q)) + ' · เจ้าของคิว: <b>' + qdEsc(q.officer) + '</b>' +
         (warn ? ' <b style="color:#b91c1c">⚠️ ยังไม่เช็คอินวันนี้</b>' : '') +
         qdRowButtons(q) + '</div>';
     });
+
+    // 👥 คิวกลุ่ม (v3) — DB ที่ยังไม่มี key pool = ไม่แสดงส่วนนี้ (เหมือน v2)
+    if (d.pool != null) h += qdPoolSection(d.pool);
 
     // 👮 สวิตช์รับคิวรายคน
     var offs = d.officers || [];
@@ -1993,10 +2001,44 @@
     el.innerHTML = h;
   }
 
+  // pool: [{code, name_th, items:[...]}] ต่อกลุ่ม (รับแบบรายการแบนที่มี pool_group ด้วย)
+  function qdPoolSection(pool){
+    var groups = [];
+    (Array.isArray(pool) ? pool : []).forEach(function(x){
+      if (!x) return;
+      if (Array.isArray(x.items)) { groups.push(x); return; }
+      var code = x.pool_group || "", g = groups.filter(function(y){ return y.code === code; })[0];
+      if (!g) groups.push(g = { code: code, items: [] });
+      g.items.push(x);
+    });
+    var h = '<h4 style="margin:12px 0 6px;font-size:14px">👥 คิวกลุ่ม (งานธุรกิจ / ครอบครัว / 90 วัน)</h4>';
+    if (!groups.length) return h + '<div style="font-size:13px;color:#64748b;margin-bottom:10px">ยังไม่มีคิวกลุ่ม</div>';
+    groups.forEach(function(g){
+      var items = g.items || [];
+      var waiting = items.filter(function(q){ return q.status === "submitted" && !q.claimed_by; }).length;
+      h += '<div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:8px 11px;margin-bottom:8px;font-size:12.5px">' +
+        '<div style="font-weight:700;font-size:13px;color:#14532d">งาน' + qdEsc(g.name_th || QD_POOL_NAME[g.code] || g.code) +
+        ' · รอกดรับ <b style="color:' + (waiting ? "#b45309" : "#166534") + '">' + waiting + '</b> คิว</div>';
+      if (!items.length) h += '<div style="color:#64748b;padding-top:4px">ไม่มีคิวในกลุ่มนี้ ✅</div>';
+      items.forEach(function(q){
+        var free = q.status === "submitted" && !q.claimed_by;
+        h += '<div style="border-top:1px solid #dcfce7;padding:5px 0;margin-top:4px">' +
+          '<b style="font-family:monospace">' + qdEsc(q.ref) + '</b> · ' + qdEsc(q.name) + ' · ' + qdEsc(q.visa) +
+          ' · นัด ' + qdEsc(q.date || q.appt_date) + ' · ' +
+          (free ? '<b style="color:#b45309">ยังไม่มีคนกดรับ</b>' : qdEsc(QD_ST[q.status] || q.status) + ' · ผู้รับ: <b>' + qdEsc(q.claimed_by || q.officer) + '</b>') +
+          (q.created ? ' <span style="color:#94a3b8;font-size:10.5px">จองเมื่อ ' + qdEsc(q.created) + '</span>' : '') +
+          qdRowButtons(q) + '</div>';
+      });
+      h += '</div>';
+    });
+    return h;
+  }
+
   function qdAfterAction(res, okMsg){
     if (!res || res.error || !res.data || res.data.ok !== true) {
       qdDirty = false;
-      qdState.msg = "ทำรายการไม่สำเร็จ: " + ((res && res.data && res.data.error) || (res && res.error && res.error.message) || "ไม่ทราบสาเหตุ");
+      var errCode = res && res.data && res.data.error;
+      qdState.msg = "ทำรายการไม่สำเร็จ: " + (QD_ERR[errCode] || errCode || (res && res.error && res.error.message) || "ไม่ทราบสาเหตุ");
       qdState.msgOk = false;
       if (qdData) renderQueueBlock(qdData);
       return false;
