@@ -678,6 +678,7 @@
   }
 
   document.getElementById("btnLogout").addEventListener("click", function(){
+    stopQueueBlock();
     sb.auth.signOut().then(function(){
       screenMain.classList.add("hidden");
       screenLogin.classList.remove("hidden");
@@ -2192,12 +2193,14 @@
     setSettings: function(en, cap, adv){ return sb.rpc("do_queue_set_settings_auth", { p_enabled: en, p_cap: cap, p_advance: adv }); },
     stale: function(){ return sb.rpc("do_queue_stale_auth"); }
   };
-  // ================= จองคิวออนไลน์ (รอบ 18) — อัปเกรดรอบ 19: จัดการเต็มที่ + รีเฟรชทุก 5 นาที =================
+  // ================= จองคิวออนไลน์ (รอบ 18) — อัปเกรดรอบ 19: จัดการเต็มที่ · v2 (ต.ค. 69): รีเฟรชทุก 1 นาทีขณะเปิดหน้า =================
   var qdTimer = null, qdData = null, qdState = { reassignId: null, pick: null, msg: null, msgOk: true };
+  var qdEpoch = 0, qdLoading = false, qdBusy = false, qdActive = false, qdDirty = false;
+  var qdUpdatedAt = "", qdFetchError = "", qdAuxError = "";
   var qdStale = [];   // คิวค้างเกินเกณฑ์ (4 วันทำการ = เตือน · เกิน 5 = ระบบโยกแล้ว)
   var qdOptions = [];  // เจ้าหน้าที่ที่ยังไม่เปิดรับคิว — หัวหน้าเพิ่มเองได้จากหน้านี้
   function qdEsc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
-  var QD_ST = { submitted: "รอจ่ายคิว", assigned: "รอกดรับ", claimed: "กำลังตรวจ", confirmed: "ยืนยันแล้ว" };
+  var QD_ST = { submitted: "รอจ่ายคิว", assigned: "รอกดรับ", claimed: "กำลังตรวจ", confirmed: "ยืนยันแล้ว", completed: "ให้บริการแล้ว" };
 
   function qdRowButtons(q){
     var h = '';
@@ -2229,6 +2232,10 @@
     var toConfirmN = (s.to_confirm || []).reduce(function(a, x){ return a + (x.n || 0); }, 0);
     var pendingN = (s.unassigned || 0) + unclaimedN + (s.waiting_applicant || 0) + toConfirmN;
     var h = '';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#64748b" role="status">' +
+      '<span>' + (qdUpdatedAt ? 'ข้อมูลคิวล่าสุด ' + qdEsc(qdUpdatedAt) : 'กำลังตรวจสอบข้อมูลคิว') + '</span>' +
+      '<button type="button" data-qact="refresh">อัปเดตคิวตอนนี้</button></div>';
+    h += '<div id="qdLiveError" role="alert" style="' + (qdFetchError || qdAuxError ? "" : "display:none;") + 'background:#fffbeb;color:#92400e;padding:10px;border-radius:8px;margin-bottom:10px">' + qdEsc(qdFetchError || qdAuxError) + '</div>';
     if (qdState.msg) h += '<div style="background:' + (qdState.msgOk ? "#f0fdf4;border:1px solid #86efac;color:#166534" : "#fef2f2;border:1px solid #fca5a5;color:#b91c1c") + ';border-radius:9px;padding:8px 12px;font-size:13px;margin-bottom:10px">' + qdEsc(qdState.msg) + '</div>';
     if (qdStale.length) {
       h += '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 12px;margin-bottom:12px">' +
@@ -2243,6 +2250,7 @@
       chip("นัดวันนี้", s.today_appts || 0, "#166534") +
       chip("รอดำเนินการ", pendingN, pendingN ? "#b45309" : "#1e3a8a") +
       chip("ยืนยันรับคิวสะสม", s.confirmed || 0) +
+      (s.completed != null ? chip("ให้บริการแล้วสะสม", s.completed || 0) : '') +   // DB เก่าไม่มี key นี้ = ไม่แสดงการ์ด
       chip("จองสะสม", s.total || 0) +
       chip("ผู้เข้าชมเว็บวันนี้", (d.visits && d.visits.today) || 0, "#7c3aed") + '</div>';
 
@@ -2306,13 +2314,16 @@
 
     // สถิติรายเดือน
     var mo = d.monthly || [];
+    var moDone = mo.some(function(m){ return m.completed !== undefined; });   // DB เก่าไม่มี completed = ซ่อนคอลัมน์
     if (mo.length) {
       h += '<h4 style="margin:10px 0 6px;font-size:14px">📈 สถิติรายเดือน</h4>' +
         '<div style="overflow-x:auto"><table style="width:100%;max-width:560px;border-collapse:collapse;font-size:12.5px;margin-bottom:10px">' +
-        '<tr style="background:#f1f5f9"><th style="padding:6px 8px;text-align:left">เดือน</th><th style="padding:6px 8px">จองเข้ามา</th><th style="padding:6px 8px">ยืนยันรับคิว</th><th style="padding:6px 8px">ไม่มาตามนัด</th><th style="padding:6px 8px">ยกเลิก</th><th style="padding:6px 8px">หมดอายุ</th></tr>';
+        '<tr style="background:#f1f5f9"><th style="padding:6px 8px;text-align:left">เดือน</th><th style="padding:6px 8px">จองเข้ามา</th><th style="padding:6px 8px">ยืนยันรับคิว</th>' +
+        (moDone ? '<th style="padding:6px 8px">ให้บริการแล้ว</th>' : '') + '<th style="padding:6px 8px">ไม่มาตามนัด</th><th style="padding:6px 8px">ยกเลิก</th><th style="padding:6px 8px">หมดอายุ</th></tr>';
       mo.forEach(function(m){
         h += '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px 8px">' + qdEsc(m.month) + '</td>' +
           '<td style="padding:6px 8px;text-align:center">' + (m.booked || 0) + '</td><td style="padding:6px 8px;text-align:center">' + (m.confirmed || 0) + '</td>' +
+          (moDone ? '<td style="padding:6px 8px;text-align:center">' + (m.completed === undefined ? "–" : (m.completed || 0)) + '</td>' : '') +
           '<td style="padding:6px 8px;text-align:center">' + (m.no_show || 0) + '</td><td style="padding:6px 8px;text-align:center">' + (m.cancelled || 0) + '</td>' +
           '<td style="padding:6px 8px;text-align:center">' + (m.expired || 0) + '</td></tr>';
       });
@@ -2329,19 +2340,23 @@
         (d.suggestions || []).map(function(sg){ return '<div style="border-top:1px solid #f1f5f9;padding:5px 0;color:#475569"><b style="color:#92400e">' + qdEsc(sg.visa) + '</b> · ' + qdEsc(sg.note) + ' <span style="color:#94a3b8;font-size:10.5px">' + qdEsc(sg.at) + '</span></div>'; }).join("") +
         '</div></details>';
     }
-    h += '<div style="font-size:11px;color:#94a3b8">อัปเดตอัตโนมัติทุก 5 นาที · หน้าเจ้าหน้าที่รายคน: <a href="https://booking.rayongimm.link/queue.html" target="_blank" rel="noopener">queue.html</a></div>';
+    h += '<div style="font-size:11px;color:#94a3b8">อัปเดตทุก 1 นาทีขณะเปิดหน้านี้ และเมื่อกลับมาที่หน้านี้ · พักอัปเดตระหว่างแก้ไข · หน้าเจ้าหน้าที่รายคน: <a href="https://booking.rayongimm.link/queue.html" target="_blank" rel="noopener">queue.html</a></div>';
     el.innerHTML = h;
   }
 
   function qdAfterAction(res, okMsg){
     if (!res || res.error || !res.data || res.data.ok !== true) {
-      qdState.msg = "ทำรายการไม่สำเร็จ: " + qdEsc((res && res.data && res.data.error) || (res && res.error && res.error.message) || "ไม่ทราบสาเหตุ");
+      qdDirty = false;
+      qdState.msg = "ทำรายการไม่สำเร็จ: " + ((res && res.data && res.data.error) || (res && res.error && res.error.message) || "ไม่ทราบสาเหตุ");
       qdState.msgOk = false;
       if (qdData) renderQueueBlock(qdData);
       return false;
     }
     qdState.msg = okMsg; qdState.msgOk = true;
+    qdDirty = false;
     qdState.reassignId = null; qdState.pick = null;
+    if (qdTimer) clearInterval(qdTimer);
+    qdTimer = setInterval(qdRefreshVisible, 60000);   // นับ 1 นาทีใหม่ ให้ข้อความยืนยันอยู่ให้อ่านจนถึงรอบอัปเดตถัดไป
     loadQueueBlock();
     return true;
   }
@@ -2350,6 +2365,11 @@
     var t = e.target.closest ? e.target.closest("[data-qact]") : null;
     if (!t) return;
     var act = t.getAttribute("data-qact"), id = t.getAttribute("data-id");
+    if (qdBusy) return;
+    if (act === "refresh") {
+      if (qdDirty && !window.confirm("มีการตั้งค่าที่ยังไม่ได้บันทึก ต้องการโหลดข้อมูลใหม่และยกเลิกค่าที่แก้ไว้หรือไม่?")) return;
+      qdDirty = false; qdState.reassignId = null; qdState.pick = null; return loadQueueBlock();
+    }
     if (act === "addOfficer") { return qdAddOfficer(); }
     if (act === "reassign") { qdState.reassignId = id; qdState.pick = null; qdState.msg = null; renderQueueBlock(qdData); }
     else if (act === "stopReassign") { qdState.reassignId = null; qdState.pick = null; renderQueueBlock(qdData); }
@@ -2357,7 +2377,7 @@
     else if (act === "doReassign") {
       var to = (qdData.officers || []).find(function(o){ return o.id === qdState.pick; }) || {};
       if (!window.confirm("ยืนยันโยกคิว " + t.getAttribute("data-ref") + " → " + (to.nick || "-") + " ?\nชื่อบนหน้าจอผู้จองจะเปลี่ยนทันที")) return;
-      QDA.reassign(id, qdState.pick).then(function(res){ qdAfterAction(res, "โยกคิวเรียบร้อย — " + (to.nick || "") + " เห็นคิวนี้แล้ว"); });
+      qdRunAction(function(){ return QDA.reassign(id, qdState.pick); }, "บันทึกเจ้าของคิวเป็น " + (to.nick || "") + " แล้ว");
     }
     else if (act === "cancel") {
       var reason = window.prompt("เหตุผลการยกเลิกคิว " + t.getAttribute("data-ref") + " (จำเป็น — ระบบจะส่งอีเมลแจ้งผู้จอง):");
@@ -2365,15 +2385,15 @@
       reason = reason.trim();
       if (!reason) { window.alert("ต้องระบุเหตุผล"); return; }
       if (!window.confirm("ยืนยันยกเลิกคิว " + t.getAttribute("data-ref") + " ?\nย้อนกลับไม่ได้ และระบบจะส่งอีเมลแจ้งผู้จองทันที")) return;
-      QDA.cancel(id, reason).then(function(res){ qdAfterAction(res, "ยกเลิกคิวแล้ว — ระบบส่งอีเมลแจ้งผู้จองเรียบร้อย"); });
+      qdRunAction(function(){ return QDA.cancel(id, reason); }, "ยกเลิกคิวแล้ว — ระบบจะดำเนินการแจ้งผู้จองทางอีเมล");
     }
     else if (act === "saveSettings") {
       var en = document.getElementById("qdSetEnabled").checked;
-      var cap = parseInt(document.getElementById("qdSetCap").value, 10);
-      var adv = parseInt(document.getElementById("qdSetAdv").value, 10);
-      if (isNaN(cap) || isNaN(adv)) { window.alert("กรอกตัวเลขให้ครบ"); return; }
+      var cap = Number(document.getElementById("qdSetCap").value || NaN);
+      var adv = Number(document.getElementById("qdSetAdv").value || NaN);
+      if (!Number.isInteger(cap) || !Number.isInteger(adv) || cap < 0 || cap > 20 || adv < 1 || adv > 60) { window.alert("เพดานคิวต้องเป็น 0–20 และวันจองล่วงหน้าต้องเป็น 1–60"); return; }
       if (!window.confirm("ยืนยันบันทึก: " + (en ? "เปิดรับจอง" : "❌ ปิดรับจองออนไลน์ทั้งระบบ") + " · เพดาน " + cap + " คิว/เช้า · ล่วงหน้า " + adv + " วัน ?\nมีผลกับผู้จองทันที")) return;
-      QDA.setSettings(en, cap, adv).then(function(res){ qdAfterAction(res, "บันทึกการตั้งค่าแล้ว"); });
+      qdRunAction(function(){ return QDA.setSettings(en, cap, adv); }, "บันทึกการตั้งค่าแล้ว");
     }
   }
   function qdAddOfficer(){
@@ -2381,35 +2401,131 @@
     if (!sel || !sel.value) { qdState.msg = "กรุณาเลือกชื่อเจ้าหน้าที่ก่อน"; qdState.msgOk = false; return renderQueueBlock(qdData); }
     var nick = sel.options[sel.selectedIndex].text;
     if (!window.confirm("เปิดรับคิวออนไลน์ให้ " + nick + " ? ระบบจะเริ่มจ่ายคิวให้ในเช้าวันทำการถัดไปที่เจ้าหน้าที่เช็คอิน")) return;
-    QDA.setAccepts(sel.value, true).then(function(res){ qdAfterAction(res, "เปิดรับคิวของ " + nick + " แล้ว"); });
+    qdRunAction(function(){ return QDA.setAccepts(sel.value, true); }, "เปิดรับคิวของ " + nick + " แล้ว");
   }
   function qdHandleChange(e){
     var t = e.target;
+    if (t && (t.id === "qdSetEnabled" || t.id === "qdSetCap" || t.id === "qdSetAdv" || t.id === "qdAddOfficer")) qdDirty = true;
     if (!t || t.getAttribute("data-qact") !== "accepts") return;
+    if (qdBusy) { t.checked = !t.checked; return; }
     var on = t.checked, nick = t.getAttribute("data-nick");
     if (!window.confirm((on ? "เปิด" : "ปิด") + "การรับคิวออนไลน์ของ " + nick + " ?")) { t.checked = !on; return; }
-    QDA.setAccepts(t.getAttribute("data-id"), on).then(function(res){ qdAfterAction(res, (on ? "เปิด" : "ปิด") + "รับคิวของ " + nick + " แล้ว"); });
+    qdRunAction(function(){ return QDA.setAccepts(t.getAttribute("data-id"), on); }, (on ? "เปิด" : "ปิด") + "รับคิวของ " + nick + " แล้ว");
   }
 
+  function qdVisible(){ return !document.hidden && !screenMain.classList.contains("hidden"); }
+  function qdAuthError(res){
+    var code = (res && res.data && res.data.error) || (res && res.error && res.error.code);
+    return ["bad_pin", "pin_locked", "officer_not_found", "forbidden", "not_supervisor", "not_authenticated", "unauthorized", "PGRST301", "42501"].indexOf(code) !== -1;
+  }
+  // หลุดล็อกอิน/PIN ใช้ไม่ได้แล้วจริง ๆ — ต่างจาก "ไม่มีสิทธิ์ใช้ RPC รองตัวนี้" (not_supervisor/forbidden) ที่ต้องไม่ซ่อนบล็อกคิวทั้งก้อน
+  function qdSessionError(res){
+    var code = (res && res.data && res.data.error) || (res && res.error && res.error.code);
+    return ["bad_pin", "pin_locked", "officer_not_found", "not_authenticated", "unauthorized", "PGRST301"].indexOf(code) !== -1;
+  }
+  function stopQueueBlock(){
+    qdEpoch++;
+    if (qdTimer) clearInterval(qdTimer);
+    qdTimer = null; qdActive = false; qdLoading = false; qdBusy = false; qdDirty = false;
+    qdData = null; qdStale = []; qdOptions = []; qdUpdatedAt = ""; qdFetchError = ""; qdAuxError = "";
+    qdState = { reassignId: null, pick: null, msg: null, msgOk: true };
+    var el = document.getElementById("qdBody");
+    if (el) { el.innerHTML = ""; el.removeAttribute("aria-busy"); }
+  }
+  function qdFailure(res){
+    var denied = qdAuthError(res);
+    if (denied) stopQueueBlock();
+    qdFetchError = denied ? "กรุณาออกจากระบบและยืนยันตัวตนอีกครั้งเพื่อดูคิว" :
+      "ยังอัปเดตคิวล่าสุดไม่ได้" + (qdData ? " ข้อมูลที่เห็นเป็นข้อมูลครั้งก่อน" : " ไม่ได้หมายความว่าไม่มีคิว") + " ระบบจะลองใหม่ทุก 1 นาที";
+    var el = document.getElementById("qdBody");
+    if (!el) return;
+    if (qdData && (qdDirty || qdState.reassignId)) {
+      var warning = document.getElementById("qdLiveError");
+      if (warning) { warning.textContent = qdFetchError; warning.setAttribute("style", "background:#fffbeb;color:#92400e;padding:10px;border-radius:8px;margin-bottom:10px"); }
+      return;
+    }
+    if (qdData) renderQueueBlock(qdData);
+    else el.innerHTML = '<div role="alert" style="font-size:13px;color:#92400e">' + qdEsc(qdFetchError) +
+      (denied ? "" : ' <button type="button" data-qact="refresh">ลองอัปเดตอีกครั้ง</button>') + '</div>';
+  }
+  function qdSetBusy(on){
+    qdBusy = on;
+    var el = document.getElementById("qdBody");
+    if (!el) return;
+    el.setAttribute("aria-busy", on ? "true" : "false");
+    el.querySelectorAll("button,input,select").forEach(function(control){
+      if (on) { control.__qdDisabled = control.disabled; control.disabled = true; }
+      else if (control.__qdDisabled !== undefined) { control.disabled = control.__qdDisabled; delete control.__qdDisabled; }
+    });
+  }
+  function qdRunAction(action, okMsg){
+    if (qdBusy || !qdVisible()) return;
+    var epoch = ++qdEpoch; // ไม่ให้ผลอ่านก่อนทำรายการทับข้อมูลหลังทำรายการ
+    qdLoading = false;
+    qdSetBusy(true);
+    Promise.resolve().then(action).then(function(res){
+      if (epoch !== qdEpoch) return;
+      qdSetBusy(false);
+      if (qdSessionError(res)) { qdFailure(res); return; }   // ไม่มีสิทธิ์ทำรายการนี้ = ขึ้นข้อความ "ทำรายการไม่สำเร็จ" ไม่ซ่อนบล็อก
+      qdAfterAction(res, okMsg);
+    }).catch(function(){
+      if (epoch !== qdEpoch) return;
+      qdSetBusy(false);
+      qdState.msg = "การเชื่อมต่อขัดข้อง ยังไม่ทราบผลรายการ ระบบกำลังตรวจสอบข้อมูลล่าสุด โปรดตรวจสอบก่อนทำซ้ำ";
+      qdState.msgOk = false;
+      qdDirty = false; qdState.reassignId = null; qdState.pick = null;
+      if (qdTimer) clearInterval(qdTimer);
+      qdTimer = setInterval(qdRefreshVisible, 60000);
+      if (qdData) renderQueueBlock(qdData);
+      loadQueueBlock();
+    });
+  }
+  function qdRefreshVisible(){
+    if (!qdActive || !qdVisible() || qdDirty || qdState.reassignId || qdBusy) return;
+    var el = document.getElementById("qdBody");
+    if (el && el.contains(document.activeElement) && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+    loadQueueBlock();
+  }
+  document.addEventListener("visibilitychange", qdRefreshVisible);
+  window.addEventListener("focus", qdRefreshVisible);
   function loadQueueBlock(){
-    var el = document.getElementById("qdBody"); if (!el) return;
-    if (!el.__qdBound) { el.addEventListener("click", qdHandleClick); el.addEventListener("change", qdHandleChange); el.__qdBound = true; }
-    QDA.load().then(function(res){
-      if (res.error || !res.data || res.data.ok !== true) {
-        el.innerHTML = '<div style="font-size:13px;color:#64748b">โหลดข้อมูลคิวไม่ได้ (' + qdEsc((res.data && res.data.error) || (res.error && res.error.message) || "ไม่ทราบสาเหตุ") + ')</div>';
-        return;
-      }
-      renderQueueBlock(res.data);
-      // ดึงคิวค้าง + รายชื่อที่เปิดรับคิวได้ พร้อมกัน แล้ววาดซ้ำครั้งเดียว (ข้อความยืนยันจึงไม่หายก่อนผู้ใช้อ่าน)
-      Promise.all([
-        QDA.stale().then(function(sr){ if (sr && sr.data && sr.data.ok === true) qdStale = sr.data.items || []; }).catch(function(){}),
-        QDA.options().then(function(orr){ if (orr && orr.data && orr.data.ok === true) qdOptions = orr.data.options || []; }).catch(function(){})
-      ]).then(function(){
-        if (qdStale.length || qdOptions.length) renderQueueBlock(qdData);
-        qdState.msg = null;
+    var el = document.getElementById("qdBody");
+    if (!el || !qdVisible() || qdLoading || qdBusy) return;
+    if (!el.__qdBound) {
+      el.addEventListener("click", qdHandleClick); el.addEventListener("change", qdHandleChange);
+      el.addEventListener("input", function(e){ if (/^qdSet/.test(e.target.id || "")) qdDirty = true; });
+      el.__qdBound = true;
+    }
+    qdActive = true;
+    if (!qdTimer) qdTimer = setInterval(qdRefreshVisible, 60000); // เริ่ม retry แม้ครั้งแรกเน็ตล้มเหลว
+    qdLoading = true;
+    var epoch = qdEpoch;
+    return Promise.resolve().then(function(){ return QDA.load(); }).then(function(res){
+      if (epoch !== qdEpoch) return;
+      if (res.error || !res.data || res.data.ok !== true) { qdFailure(res); return; }
+      return Promise.all([
+        Promise.resolve().then(function(){ return QDA.stale(); }).catch(function(){ return null; }),
+        Promise.resolve().then(function(){ return QDA.options(); }).catch(function(){ return null; })
+      ]).then(function(extra){
+        if (epoch !== qdEpoch) return;
+        // หยุดบล็อกเฉพาะเมื่อหลุดล็อกอินจริง · RPC รองตอบ not_supervisor/forbidden = แสดงรายการหลักต่อ + แถบเหลือง
+        if (extra.some(qdSessionError)) { qdFailure(extra.filter(qdSessionError)[0]); return; }
+        if (qdDirty || qdState.reassignId) return; // ผู้ใช้อาจเริ่มแก้ไขหลังส่งคำขออ่านไปแล้ว
+        var sr = extra[0], options = extra[1];
+        var staleOk = sr && !sr.error && sr.data && sr.data.ok === true;
+        var optionsOk = options && !options.error && options.data && options.data.ok === true;
+        qdStale = staleOk ? sr.data.items || [] : [];
+        qdOptions = optionsOk ? options.data.options || [] : [];
+        qdFetchError = "";
+        qdAuxError = staleOk && optionsOk ? "" : extra.some(qdAuthError)
+          ? "บัญชีนี้ไม่มีสิทธิ์ดูคิวค้างหรือรายชื่อเจ้าหน้าที่ที่จะเพิ่ม — รายการคิวด้านล่างยังเป็นข้อมูลล่าสุด"
+          : "รายการคิวหลักอัปเดตแล้ว แต่ยังตรวจคิวค้างหรือรายชื่อเจ้าหน้าที่เพิ่มเติมไม่ได้ โปรดลองอัปเดตอีกครั้ง";
+        qdUpdatedAt = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+        renderQueueBlock(res.data); // ต้องวาดใหม่แม้รายการคิวค้างและตัวเลือกถูกล้างจนเหลือศูนย์
+        qdState.msg = null; // ข้อความยืนยันแสดงในรอบที่โหลดสำเร็จนี้แล้ว รอบถัดไปไม่ต้องค้าง (เหมือนเดิม)
       });
-      if (!qdTimer) qdTimer = setInterval(function(){ qdState.reassignId = null; loadQueueBlock(); }, 5 * 60 * 1000);
-    }).catch(function(){ el.innerHTML = '<div style="font-size:13px;color:#64748b">โหลดข้อมูลคิวไม่ได้</div>'; });
+    }).catch(function(){ if (epoch === qdEpoch) qdFailure(null); })
+      .then(function(){ if (epoch === qdEpoch) qdLoading = false; });
   }
 })();
 
