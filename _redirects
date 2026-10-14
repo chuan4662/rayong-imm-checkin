@@ -1,0 +1,10 @@
+# ปิดไฟล์ภายในของโปรเจกต์ (เอกสาร / SQL / โค้ดฝั่งเซิร์ฟเวอร์) ไม่ให้เปิดจากเว็บสาธารณะ
+# หน้าที่ใช้งานจริง = index.html · dashboard.html · report.html + รูปภาพ (ไม่แตะ) · คู่มือเจ้าหน้าที่ใน docs/ ยังเปิดได้
+/CLAUDE.md           /404.html  404!
+/CLAUDE_ARCHIVE.md   /404.html  404!
+/README.md           /404.html  404!
+/.gitignore          /404.html  404!
+/migrations/*        /404.html  404!
+/edge-functions/*    /404.html  404!
+/docs/00_*           /404.html  404!
+/docs/90_*           /404.html  404!
