@@ -1,10 +1,38 @@
 # ปิดไฟล์ภายในของโปรเจกต์ (เอกสาร / SQL / โค้ดฝั่งเซิร์ฟเวอร์) ไม่ให้เปิดจากเว็บสาธารณะ
-# หน้าที่ใช้งานจริง = index.html · dashboard.html · report.html + รูปภาพ (ไม่แตะ) · คู่มือเจ้าหน้าที่ใน docs/ ยังเปิดได้
-/CLAUDE.md           /404.html  404!
-/CLAUDE_ARCHIVE.md   /404.html  404!
-/README.md           /404.html  404!
-/.gitignore          /404.html  404!
-/migrations/*        /404.html  404!
-/edge-functions/*    /404.html  404!
-/docs/00_*           /404.html  404!
-/docs/90_*           /404.html  404!
+# หน้าที่ใช้งานจริง = index.html · dashboard.html · report.html + รูปภาพ/ฟอนต์ (ไม่แตะ) · คู่มือเจ้าหน้าที่ใน docs/ ยังเปิดได้
+# หมายเหตุ: Netlify เสิร์ฟชื่อไฟล์รากและชื่อโฟลเดอร์แบบ "ไม่สนตัวพิมพ์" (เช่น /claude.md ก็ได้ไฟล์ CLAUDE.md) แต่กฎเหล่านี้สนตัวพิมพ์ จึงเขียนไว้หลายรูปแบบ (ตัวเล็ก/ตัวใหญ่/ขึ้นต้นใหญ่)
+# ทางแก้ถาวรที่ไม่ต้องไล่รูปแบบ = ย้ายไฟล์เว็บเข้าโฟลเดอร์ public/ แล้วตั้ง publish เป็น public (เจ้าของยังไม่ได้สั่ง)
+/CLAUDE.md                         /404.html  404!
+/CLAUDE.MD                         /404.html  404!
+/claude.md                         /404.html  404!
+/claude.MD                         /404.html  404!
+/Claude.md                         /404.html  404!
+/Claude.MD                         /404.html  404!
+/CLAUDE_ARCHIVE.md                 /404.html  404!
+/CLAUDE_ARCHIVE.MD                 /404.html  404!
+/claude_archive.md                 /404.html  404!
+/claude_archive.MD                 /404.html  404!
+/Claude_archive.md                 /404.html  404!
+/Claude_archive.MD                 /404.html  404!
+/Claude_Archive.md                 /404.html  404!
+/Claude_Archive.MD                 /404.html  404!
+/README.md                         /404.html  404!
+/README.MD                         /404.html  404!
+/readme.md                         /404.html  404!
+/readme.MD                         /404.html  404!
+/Readme.md                         /404.html  404!
+/Readme.MD                         /404.html  404!
+/.gitignore                        /404.html  404!
+/migrations/*                      /404.html  404!
+/Migrations/*                      /404.html  404!
+/MIGRATIONS/*                      /404.html  404!
+/edge-functions/*                  /404.html  404!
+/Edge-Functions/*                  /404.html  404!
+/EDGE-FUNCTIONS/*                  /404.html  404!
+/Edge-functions/*                  /404.html  404!
+/docs/00_*                         /404.html  404!
+/docs/90_*                         /404.html  404!
+/Docs/00_*                         /404.html  404!
+/Docs/90_*                         /404.html  404!
+/DOCS/00_*                         /404.html  404!
+/DOCS/90_*                         /404.html  404!
