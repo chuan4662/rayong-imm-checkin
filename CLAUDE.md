@@ -987,3 +987,23 @@ facts ของวันนี้ถูกต้อง (expected 21, เช็�
 - Netlify: หน้า billing ขึ้น "ทีมจะถูกลดเป็น Free ในอีก 13 วัน" (ราว 27–28 ต.ค.) — เครดิตหลังขึ้นเหลือราว 717/1,000
 - ไฟล์กุญแจ service-role (`.service_role_key.local.txt`) อยู่ในโฟลเดอร์ `Service Rayong Imm app` ที่ซิงก์ OneDrive (gitignore แล้ว ไม่ได้เปิดอ่าน) — อย่าแชร์/ซิปโฟลเดอร์แม่ แนะนำย้ายออก
 - supabase-js โหลดแบบ `@2` ไม่ล็อกเวอร์ชัน/ไม่มี SRI · viewport ห้ามซูม (ของเดิม)
+
+## 42. งานลบรูปอัตโนมัติ `delete-old-photos` ไม่เคยทำงาน → แก้เป็น v8 + ลบจริง (26 ต.ค. 2569) — ✅ เสร็จ
+
+**อาการ:** cron `delete-old-photos-daily` (02:00) ตอบ 401 ทุกคืนตั้งแต่ติดตั้ง (ก.ค.) ไม่เคยลบสักรูป — รูปเกิน 31 วันค้าง 1,018 แถว / 1,036 ไฟล์ (ขัดนโยบาย PDPA migration 23) · เป็นต้นเหตุที่รายงานเช้าขึ้น "อีเมลส่งไม่สำเร็จ" (ตัวนับนั้นนับทุกคำขอ HTTP ของ pg_net)
+
+**ต้นเหตุ 401:** โค้ด v7 ที่ deploy = ไฟล์ใน repo ทุกบรรทัด · `verify_jwt = false` · ค่า Function Secret `CRON_SECRET` ไม่ตรงกับ vault `cron_secret` → เจ้าของตั้งใหม่ทั้ง 2 จุดด้วยสคริปต์ (สุ่มเอง ไม่มีใครเห็นค่า) · vault แก้ล่าสุด 26/10/2026 11:35
+
+**บั๊กในโค้ดเดิมที่จะลบเกินถ้าแค่แก้รหัส (แก้ใน v8 แล้ว — `edge-functions/edge_function_delete-old-photos.ts`):**
+1. orphan sweep รู้จักแค่ `check_in.photo_path` → รูปเช็คเอาต์ (migration 31, `checkout_*.jpg` bucket เดียวกัน) ถูกมองเป็นกำพร้าและลบทั้งหมดหลัง 24 ชม. (ทดสอบกับ mock: ลบรูปเช็คเอาต์ใหม่ 58/60)
+2. select ไม่แบ่งหน้า → ติดเพดาน PostgREST 1,000 แถว รายการ "รูปที่ยังใช้อยู่" อาจขาด
+3. list() กลืน error เงียบ · ลบทีละไฟล์
+v8: อ้างอิงทั้ง check_in + check_out · แบ่งหน้าครบ · อ่านพลาด = หยุดทั้งรอบไม่ลบ · `{"dry_run": true}` คืนจำนวน/ตัวอย่างโดยไม่ลบ · ลบเป็นชุดละ 100 · รูปเช็คเอาต์เกินกำหนดลบเฉพาะไฟล์ (`check_out.photo_path` เป็น not null จึงไม่แก้แถว — แดชบอร์ดไม่แสดงรูปเช็คเอาต์) · ยังเคารพ `retention_hold`
+
+**deploy:** ผ่าน Supabase CLI (`npx --yes supabase@2.122.0 functions deploy delete-old-photos --project-ref aamzsbuwfdyljdvwaifb --use-api --no-verify-jwt`) 11:14 น. — ไม่ใช่หน้า Dashboard (กติกาข้อ 11) · ถอยกลับ = deploy ไฟล์จาก commit ก่อนหน้า (v7)
+
+**ลบจริง:** เจ้าของเลือก "ไม่มีรูปที่ต้องเก็บ ลบหมดรอบเดียว" → dry-run 2 รอบ (ตรง SQL ตรวจ) → request 558 (11:40): เช็กอิน 1,018 แถว + เช็คเอาต์ 11 + กำพร้า 8 = 1,037 ไฟล์ · error 0 · bucket 1,382 → 345 ไฟล์ (99 → 24 MB) · เก่าสุดเหลือ 28/09/2026 · แถวที่อ้างรูปแต่ไฟล์หาย = 0
+
+**ใช้ซ้ำ:** `supabase db query --linked --project-ref aamzsbuwfdyljdvwaifb "<sql>"` รัน SQL ได้จากเทอร์มินัล (ใส่ `2>$null` ใน PowerShell 5.1) · เรียกฟังก์ชันแบบ cron ด้วย `net.http_post(... 'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name='cron_secret') ...)` แล้วอ่าน `net._http_response` · ชุดทดสอบในเครื่อง (Deno + mock) อยู่นอก repo ที่ `C:\Users\ASUS\rimm-photo-fix\test\` · รายงานเต็ม: โฟลเดอร์ `handoff-งานลบรูป-26ตค69\ผลแก้-ลบจริง-26ตค69-1140.md`
+
+**ค้าง:** ตรวจ 27 ต.ค. หลัง 02:00 ว่า Invocations = 200 · ตัวนับในรายงานเช้า (`do_send_daily_queue_digest`) เป็นงานของเซสชันระบบคิว
